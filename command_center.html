@@ -1007,20 +1007,39 @@ function LearnTab() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itemId: item.id })
     })
-      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function(d) {
-        var segs = d.segments || [];
-        if (segs.length === 0) {
-          // MDなし → item.url を直接再生
-          if (item.url) {
-            playSegment([{ id: 'full', title: item.title, text: '', cacheKey: null, url: item.url }], 0, item.id);
-          }
-          return;
+      .then(function(r) {
+        if (!r.ok) throw new Error(r.status);
+        var ct = r.headers.get('content-type') || '';
+        if (ct.indexOf('audio') !== -1) {
+          // 方針A: サーバー側結合MP3バイナリ
+          return r.blob().then(function(blob) {
+            var url = URL.createObjectURL(blob);
+            var audio = new Audio(url);
+            audioRef.current = audio;
+            attachProgress(audio);
+            setPlayState({ id: item.id, segments: [{ id: 'combined', title: item.title }], idx: 0, paused: false });
+            audio.onended = function() {
+              URL.revokeObjectURL(url);
+              stopAudio();
+              setPlayState(null);
+            };
+            audio.play().catch(function() {});
+          });
+        } else {
+          // フォールバック: JSONセグメント（アーカイブ直接MP3など）
+          return r.json().then(function(d) {
+            var segs = d.segments || [];
+            if (segs.length === 0) {
+              if (item.url) {
+                playSegment([{ id: 'full', title: item.title, text: '', cacheKey: null, url: item.url }], 0, item.id);
+              }
+              return;
+            }
+            playSegment(segs, 0, item.id);
+          });
         }
-        playSegment(segs, 0, item.id);
       })
       .catch(function() {
-        // API失敗でも item.url があれば再生
         if (item.url) {
           playSegment([{ id: 'full', title: item.title, text: '', cacheKey: null, url: item.url }], 0, item.id);
         }
