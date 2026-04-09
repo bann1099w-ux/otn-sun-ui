@@ -580,6 +580,9 @@ input[type="text"]:focus{border-color:rgba(0,0,0,0.35)}
 <div id="toast"></div>
 
 <script>
+// Tailscale経由のAPIベースURL（GitHub Pages用）
+const BASE_URL = 'http://100.77.24.4:8080';
+
 // ==================== 状態管理 ====================
 const S = {
   activeTab: 0,
@@ -623,7 +626,7 @@ function toast(msg, dur=2500) {
 // ==================== ログ（第2条: 全履歴保存） ====================
 function logAction(action, data={}) {
   const entry = { action, timestamp: new Date().toISOString(), tab: S.activeTab, ...data };
-  fetch('/api/log', {
+  fetch(BASE_URL + '/api/log', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(entry)
@@ -636,7 +639,7 @@ function startReplyPoller(attempt, cardId, textId) {
   if(attempt > 30) return;
   S.replyPoller = setTimeout(async () => {
     try {
-      const r = await fetch('/api/reply');
+      const r = await fetch(BASE_URL + '/api/reply');
       const d = await r.json();
       if(d.reply) {
         const card = document.getElementById(cardId);
@@ -662,7 +665,7 @@ async function sendInstruction() {
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span>送信中';
   try {
-    const r = await fetch('/api/instruct', {
+    const r = await fetch(BASE_URL + '/api/instruct', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ instruction, attachments: S.attachedFiles })
@@ -685,7 +688,7 @@ async function sendInstruction() {
 
 async function loadStatus() {
   try {
-    const r = await fetch('/api/status');
+    const r = await fetch(BASE_URL + '/api/status');
     if(!r.ok) return;
     const d = await r.json();
     const otn = d['O-TN-SUN'] || d;
@@ -727,7 +730,7 @@ async function handleAttach(input) {
   const fd = new FormData();
   files.forEach(f => fd.append('file', f));
   try {
-    const r = await fetch('/api/upload', { method:'POST', body: fd });
+    const r = await fetch(BASE_URL + '/api/upload', { method:'POST', body: fd });
     const d = await r.json();
     if(d.ok) {
       S.attachedFiles.push(...(d.paths||[]));
@@ -776,7 +779,7 @@ let _approvalPollTimer = null;
 
 async function loadSessionStatus() {
   try {
-    const r = await fetch('/api/session-status');
+    const r = await fetch(BASE_URL + '/api/session-status');
     if (!r.ok) return;
     const d = await r.json();
     const dot = document.getElementById('session-dot');
@@ -806,7 +809,7 @@ async function loadSessionStatus() {
 async function startNewSession() {
   const instruction = document.getElementById('instruction-input').value.trim();
   try {
-    const r = await fetch('/api/session-new', {
+    const r = await fetch(BASE_URL + '/api/session-new', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ instruction })
@@ -827,7 +830,7 @@ async function startNewSession() {
 
 async function stopSession() {
   try {
-    const r = await fetch('/api/session-stop', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const r = await fetch(BASE_URL + '/api/session-stop', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
     const d = await r.json();
     toast(d.message || '停止しました');
     setTimeout(loadSessionStatus, 500);
@@ -836,7 +839,7 @@ async function stopSession() {
 
 async function loadPendingApprovals() {
   try {
-    const r = await fetch('/api/pending-approvals');
+    const r = await fetch(BASE_URL + '/api/pending-approvals');
     if (!r.ok) return;
     const d = await r.json();
     const card = document.getElementById('pending-approvals-card');
@@ -863,7 +866,7 @@ async function loadPendingApprovals() {
 
 async function approveItem(id) {
   try {
-    const r = await fetch('/api/approve', {
+    const r = await fetch(BASE_URL + '/api/approve', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })
@@ -881,7 +884,7 @@ async function approveItem(id) {
 
 async function rejectItem(id) {
   try {
-    const r = await fetch('/api/reject', {
+    const r = await fetch(BASE_URL + '/api/reject', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })
@@ -929,7 +932,7 @@ async function submitBill(fromAdvisory=null) {
   document.getElementById('bill-id-label').textContent = billId + (fromAdvisory ? ' ★参謀' : '');
   const instruction = `【法案審議依頼】${billId}\n${bill}\n\n上記について以下を分析してください:\n① 具体的な実装方針\n② 影響を受けるシステム・ファイル一覧\n③ リスクと副作用\n④ 工数見積もり（番の1日2-3時間前提）\n⑤ 承認すべきか否かの推奨`;
   try {
-    const r = await fetch('/api/instruct', {
+    const r = await fetch(BASE_URL + '/api/instruct', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({instruction})
@@ -960,7 +963,7 @@ function quickBill(instruction) {
 async function checkConstitution() {
   const instruction = '現在のシステム構成が以下の3原則に違反していないか確認してください:\n第1条 セキュリティ最優先\n第2条 全履歴を詳細に残す\n第3条 コスト最小化（ステージゲート方式）';
   try {
-    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const r = await fetch(BASE_URL + '/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
     const d = await r.json();
     if(d.ok) { logAction('check_constitution'); toast('違憲審査を依頼しました'); }
   } catch(e) { toast('送信エラー'); }
@@ -1008,7 +1011,7 @@ const PROJECTS_FALLBACK = [
 
 async function loadProgress() {
   try {
-    const r = await fetch('/api/progress');
+    const r = await fetch(BASE_URL + '/api/progress');
     if(!r.ok) throw new Error();
     const d = await r.json();
     renderProgress(d.projects || PROJECTS_FALLBACK);
@@ -1037,7 +1040,7 @@ function renderProgress(projects) {
 
 async function loadPendingTasks() {
   try {
-    const r = await fetch('/api/pending-tasks');
+    const r = await fetch(BASE_URL + '/api/pending-tasks');
     if(!r.ok) throw new Error();
     const d = await r.json();
     renderPendingTasks(d.tasks || []);
@@ -1076,7 +1079,7 @@ function requestRoadmap() {
 // ==================== 受信箱タブ ====================
 async function loadReports() {
   try {
-    const r = await fetch('/api/exec-history');
+    const r = await fetch(BASE_URL + '/api/exec-history');
     const d = await r.json();
     S.reports = (d.history||[]).map((h,i) => {
       const detailParts = [];
@@ -1101,7 +1104,7 @@ async function loadReports() {
     });
     // advisory_queue も統合
     try {
-      const ra = await fetch('/api/advisory-queue');
+      const ra = await fetch(BASE_URL + '/api/advisory-queue');
       const da = await ra.json();
       const advReports = (da.queue||[]).map((a,i) => ({
         id: 1000+i,
@@ -1185,7 +1188,7 @@ async function loadSansho() {
 // --- 監視ダッシュボード ---
 async function loadMonitorCards() {
   try {
-    const r = await fetch('/api/monitor');
+    const r = await fetch(BASE_URL + '/api/monitor');
     if(!r.ok) throw new Error();
     const d = await r.json();
     renderMonitorCards(d.cards || []);
@@ -1266,7 +1269,7 @@ function monitorAction(cardId, action) {
 // --- 提案キュー ---
 async function loadAdvisoryQueue() {
   try {
-    const r = await fetch('/api/advisory-queue');
+    const r = await fetch(BASE_URL + '/api/advisory-queue');
     if(!r.ok) throw new Error();
     const d = await r.json();
     S.advisory = d.queue || [];
@@ -1388,7 +1391,7 @@ function updateSanshoTabBadge() {
 // --- 自律スケジュール ---
 async function loadSchedule() {
   try {
-    const r = await fetch('/api/advisory-schedule');
+    const r = await fetch(BASE_URL + '/api/advisory-schedule');
     if(!r.ok) throw new Error();
     const d = await r.json();
     S.schedule = d.jobs || [];
@@ -1457,7 +1460,7 @@ async function generateReview() {
   const instruction = '今日の活動を振り返り、学習教材（話し言葉、NHK教育トーン）として音声原稿を生成してください。Market Voice（メイ）が読み上げる形式で。SSML対応。';
   document.getElementById('review-status').textContent = '生成依頼中…';
   try {
-    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const r = await fetch(BASE_URL + '/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
     const d = await r.json();
     if(d.ok) {
       logAction('generate_review');
@@ -1471,7 +1474,7 @@ async function generateReport(type) {
   const labels = {morning:'朝', evening:'夕'};
   const instruction = `${labels[type]}レポートを生成してください。Market Voice（メイ）が読み上げる形式で、今日の主要なシステム状態・タスク状況を含めてください。`;
   try {
-    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const r = await fetch(BASE_URL + '/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
     const d = await r.json();
     if(d.ok) { logAction('generate_report', {type}); toast(`${labels[type]}レポートを依頼しました`); }
   } catch(e) { toast('エラー'); }
@@ -1479,7 +1482,7 @@ async function generateReport(type) {
 
 async function loadTtsDict() {
   try {
-    const r = await fetch('/api/tts-dictionary');
+    const r = await fetch(BASE_URL + '/api/tts-dictionary');
     const d = await r.json();
     const entries = d.entries || (Array.isArray(d) ? d : []);
     document.getElementById('tts-count').textContent = entries.length;
@@ -1495,7 +1498,7 @@ async function addTtsEntry() {
   const reading = document.getElementById('tts-reading').value.trim();
   if(!word || !reading) { toast('単語と読みを入力してください'); return; }
   try {
-    const r = await fetch('/api/tts-dictionary', {
+    const r = await fetch(BASE_URL + '/api/tts-dictionary', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ word, reading })
@@ -1516,7 +1519,7 @@ async function addTtsEntry() {
 async function loadAudioArchive() {
   const el = document.getElementById('audio-archive');
   try {
-    const r = await fetch('/api/voice-library');
+    const r = await fetch(BASE_URL + '/api/voice-library');
     const d = await r.json();
     // サーバーはフラットな items[] を返す → カテゴリ別にグループ化
     const flatItems = d.items || [];
@@ -1616,7 +1619,7 @@ async function _loadClaudeMd() {
   const el = document.getElementById('claude-md-text');
   if(!el) return;
   try {
-    const r = await fetch('/api/claude-md');
+    const r = await fetch(BASE_URL + '/api/claude-md');
     const d = await r.json();
     el.textContent = d.content || '（内容なし）';
   } catch(e) {
@@ -1629,7 +1632,7 @@ async function _loadKnowledgeBase() {
   const countEl = document.getElementById('kb-count');
   if(!listEl) return;
   try {
-    const r = await fetch('/api/knowledge-base');
+    const r = await fetch(BASE_URL + '/api/knowledge-base');
     const d = await r.json();
     const entries = d.entries || [];
     if(countEl) countEl.textContent = `（${entries.length}件）`;
@@ -1679,7 +1682,7 @@ async function loadKaizenProtocol() {
   document.getElementById('rule-detail-text').textContent = '読み込み中…';
   el.style.display = 'block';
   try {
-    const r = await fetch('/api/kaizen-protocol');
+    const r = await fetch(BASE_URL + '/api/kaizen-protocol');
     if(!r.ok) throw new Error(r.status);
     const d = await r.json();
     document.getElementById('rule-detail-text').textContent = d.content || '（内容なし）';

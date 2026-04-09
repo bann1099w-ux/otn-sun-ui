@@ -404,6 +404,9 @@ body {
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
+// Tailscale経由のAPIベースURL（GitHub Pages用）
+const BASE_URL = 'http://100.77.24.4:8080';
+
 const { useState, useEffect, useCallback } = React;
 
 /* ========== Toast ========== */
@@ -472,7 +475,7 @@ function HomeTab() {
   const [charaError, setCharaError] = useState(false);
 
   useEffect(function() {
-    fetch('/api/chara-state')
+    fetch(BASE_URL + '/api/chara-state')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(data) { setCharaState(Array.isArray(data) ? data : (data['キャラ一覧'] || [])); })
       .catch(function() { setCharaError(true); });
@@ -482,7 +485,7 @@ function HomeTab() {
     if (!input.trim()) return;
     setResponse('送信中...');
     try {
-      const res = await fetch('/api/instruct', {
+      const res = await fetch(BASE_URL + '/api/instruct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ instruction: input.trim() }),
@@ -635,12 +638,12 @@ function InboxTab() {
   const [replyError, setReplyError] = useState(false);
 
   useEffect(function() {
-    fetch('/api/approvals')
+    fetch(BASE_URL + '/api/approvals')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(data) { setApprovals(data); })
       .catch(function() { setApprovalsError(true); });
 
-    fetch('/api/reply')
+    fetch(BASE_URL + '/api/reply')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(data) { setReplyData(data); })
       .catch(function() { setReplyError(true); });
@@ -722,19 +725,19 @@ function AdvisorTab() {
   const [schedErr, setSchedErr] = React.useState(null);
 
   React.useEffect(function() {
-    fetch('/api/advisory-queue')
+    fetch(BASE_URL + '/api/advisory-queue')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(d) { setQueue(d.queue || []); })
       .catch(function() { setQueueErr('API接続エラー'); });
 
-    fetch('/api/advisory-schedule')
+    fetch(BASE_URL + '/api/advisory-schedule')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(d) { setSchedules(d.jobs || []); })
       .catch(function() { setSchedErr('API接続エラー'); });
   }, []);
 
   function dismiss(advisoryId, createdAt) {
-    fetch('/api/advisory/' + advisoryId + '/dismiss', { method: 'POST' })
+    fetch(BASE_URL + '/api/advisory/' + advisoryId + '/dismiss', { method: 'POST' })
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function() {
         setQueue(function(prev) {
@@ -909,7 +912,7 @@ function LearnTab() {
   }
 
   React.useEffect(function() {
-    fetch('/api/voice-library')
+    fetch(BASE_URL + '/api/voice-library')
       .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(d) {
         var loaded = d.items || [];
@@ -959,7 +962,7 @@ function LearnTab() {
       audio.onerror = function() { onEnd(); };
       audio.play().catch(function() { onEnd(); });
     } else if (seg.cacheKey) {
-      fetch('/api/voice-audio/cache/' + seg.cacheKey)
+      fetch(BASE_URL + '/api/voice-audio/cache/' + seg.cacheKey)
         .then(function(r) {
           if (!r.ok) throw new Error('cache miss');
           return r.blob();
@@ -975,7 +978,7 @@ function LearnTab() {
         })
         .catch(function() { playSegmentByText(seg.text, onEnd); });
     } else {
-      fetch('/api/voice-audio/generate', {
+      fetch(BASE_URL + '/api/voice-audio/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: seg.text, segmentId: itemId + '_ch_' + idx })
@@ -999,7 +1002,7 @@ function LearnTab() {
 
   function handlePlay(item) {
     stopAudio();
-    fetch('/api/voice-library/play', {
+    fetch(BASE_URL + '/api/voice-library/play', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itemId: item.id })
