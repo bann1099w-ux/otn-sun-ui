@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BIGBAN Command Center v2.1</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f7f7f8;
+  color: #1a1a1a;
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Header ===== */
+.header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 12px 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.02em;
+}
+.header .subtitle {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* ===== Alert Banner ===== */
+.alert-banner {
+  background: #dc2626;
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+.alert-banner strong { font-weight: 700; }
+.alert-banner .alert-sub { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+
+/* ===== Main Content ===== */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 80px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Tab Bar ===== */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  padding: 6px 0;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 10px;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.tab-item.active { color: #d97706; }
+.tab-icon { font-size: 20px; line-height: 1; }
+
+/* ===== Cards ===== */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e5e5;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+/* ===== System Status Cards ===== */
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.status-item:last-child { border-bottom: none; }
+.status-left { display: flex; align-items: center; gap: 10px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-green { background: #22c55e; }
+.dot-yellow { background: #eab308; }
+.dot-gray { background: #9ca3af; }
+.status-name { font-size: 13px; font-weight: 600; }
+.status-desc { font-size: 11px; color: #999; margin-top: 1px; }
+.status-right { text-align: right; }
+.status-pct { font-size: 13px; font-weight: 600; }
+.status-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-top: 2px;
+}
+
+/* ===== Progress Bar ===== */
+.progress-bar-wrap {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.fill-green { background: #22c55e; }
+.fill-amber { background: #f59e0b; }
+.fill-gray { background: #9ca3af; }
+.fill-purple { background: #a855f7; }
+
+/* ===== Quick Buttons ===== */
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.quick-btn {
+  background: #f9fafb;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+.quick-btn:active { background: #f0f0f0; }
+
+/* ===== Input Area ===== */
+.input-area {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.input-area textarea {
+  flex: 1;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  height: 44px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-area textarea:focus { border-color: #d97706; }
+.send-btn {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.send-btn:active { opacity: 0.8; }
+
+/* ===== Response Area ===== */
+.response-area {
+  background: #f9fafb;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  color: #555;
+  min-height: 40px;
+  line-height: 1.5;
+}
+
+/* ===== Form Elements ===== */
+.form-group { margin-bottom: 12px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: #d97706;
+}
+.form-textarea { resize: vertical; min-height: 60px; }
+.form-btn {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.15s;
+}
+.form-btn:active { opacity: 0.8; }
+.form-btn-outline {
+  background: #fff;
+  color: #d97706;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* ===== Log List ===== */
+.log-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.filter-chip.active {
+  background: #d97706;
+  color: #fff;
+  border-color: #d97706;
+}
+.log-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.log-item:last-child { border-bottom: none; }
+.log-time { font-size: 11px; color: #999; }
+.log-msg { font-size: 13px; margin-top: 2px; }
+.log-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+.tag-info { background: #dbeafe; color: #1e40af; }
+.tag-warn { background: #fef3c7; color: #92400e; }
+.tag-error { background: #fee2e2; color: #991b1b; }
+.tag-success { background: #dcfce7; color: #166534; }
+
+/* ===== Schedule Table ===== */
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.schedule-item:last-child { border-bottom: none; }
+.schedule-name { font-size: 13px; font-weight: 500; }
+.schedule-time { font-size: 11px; color: #999; }
+.schedule-status {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 8px;
+}
+.sched-active { background: #dcfce7; color: #166534; }
+.sched-pending { background: #fef3c7; color: #92400e; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+  max-width: 380px;
+  text-align: center;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== Section Header ===== */
+.section-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+
+/* ===== TTS Item ===== */
+.tts-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.tts-item:last-child { border-bottom: none; }
+.tts-word { font-size: 14px; font-weight: 600; }
+.tts-reading { font-size: 12px; color: #999; }
+.play-btn {
+  background: #f0f0f0;
+  border: none;
+  border-radius: 50%;
+  width: 32px; height: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* hide all tab content by default */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BIGBAN Command Center</h1>
+  <div class="subtitle">v2.1 — Build-free Edition</div>
+</div>
+
+<div id="alert-area"></div>
+<div class="main" id="main-content"></div>
+<div class="tab-bar" id="tab-bar"></div>
+<div class="toast" id="toast"></div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+/* ========== Toast ========== */
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ========== Data ========== */
+const TABS = [
+  { id: 'home',     icon: '🏠', label: 'ホーム' },
+  { id: 'congress',  icon: '🏛️', label: '国会' },
+  { id: 'progress', icon: '📊', label: '進捗' },
+  { id: 'inbox',    icon: '📥', label: '受信箱' },
+  { id: 'advisor',  icon: '🧠', label: '参謀' },
+  { id: 'learn',    icon: '📚', label: '学習' },
+];
+
+
+const QUICK_BTNS = [
+  { icon: '📋', label: '今日のTODO' },
+  { icon: '🔄', label: 'Kaizen確認' },
+  { icon: '📦', label: 'CC移行' },
+  { icon: '🧹', label: 'WSL片付け' },
+];
+
+const PROJECTS = [
+  { name: 'O-TN-SUN Windows移行', phase: 'Phase A', pct: 40, color: 'fill-gray' },
+  { name: 'バスケ予約PWA',         phase: 'Phase 7A完了', pct: 70, color: 'fill-amber' },
+  { name: 'SRROE v4A FW評価',     phase: '評価中（〜7月）', pct: 55, color: 'fill-green' },
+  { name: 'CivRebuild',            phase: 'Phase 2残タスク', pct: 30, color: 'fill-purple' },
+];
+
+
+
+const TTS_WORDS = [
+  { word: 'Drawdown',       reading: 'ドローダウン — 最大資産減少率' },
+  { word: 'Profit Factor',  reading: 'プロフィットファクター — 総利益/総損失' },
+  { word: 'Sharpe Ratio',   reading: 'シャープレシオ — リスク調整後リターン' },
+  { word: 'SRROE',          reading: 'Sharpe-Risk-ROE — 独自指標' },
+];
+
+/* ========== Alert Banner ========== */
+function AlertBanner() {
+  return React.createElement('div', { className: 'alert-banner' },
+    React.createElement('strong', null, '⚠️ バスケPWA 4/20 抽選 → 4/23 利用申請期限'),
+    React.createElement('div', { className: 'alert-sub' }, 'この期限を逃すと当選が無効になります')
+  );
+}
+
+/* ========== Home Tab ========== */
+function statusToDot(status) {
+  if (!status) return 'dot-gray';
+  if (status === '稼働中' || status === 'active' || status === 'running') return 'dot-green';
+  if (status === '待機中' || status === 'idle' || status === '実行中') return 'dot-yellow';
+  if (status === 'エラー' || status === 'error') return 'dot-gray';
+  return 'dot-gray';
+}
+
+function HomeTab() {
+  const [input, setInput] = useState('');
+  const [response, setResponse] = useState('Claudeへの指示を入力してください');
+  const [charaState, setCharaState] = useState(null);
+  const [charaError, setCharaError] = useState(false);
+
+  useEffect(function() {
+    fetch('/api/chara-state')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(data) { setCharaState(Array.isArray(data) ? data : (data['キャラ一覧'] || [])); })
+      .catch(function() { setCharaError(true); });
+  }, []);
+
+  const handleSend = useCallback(async () => {
+    if (!input.trim()) return;
+    setResponse('送信中...');
+    try {
+      const res = await fetch('/api/instruct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction: input.trim() }),
+      });
+      if (res.ok) {
+        setResponse('送信しました。Claudeが処理中です…');
+        setInput('');
+      } else {
+        setResponse('エラーが発生しました（status: ' + res.status + '）');
+      }
+    } catch (e) {
+      setResponse('API接続エラー');
+    }
+  }, [input]);
+
+  return React.createElement('div', null,
+    /* Instruction input */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '💬 Claudeへ指示'),
+      React.createElement('div', { className: 'input-area' },
+        React.createElement('textarea', {
+          value: input,
+          onChange: function(e) { setInput(e.target.value); },
+          placeholder: '指示を入力...',
+        }),
+        React.createElement('button', { className: 'send-btn', onClick: handleSend }, '送信')
+      ),
+      React.createElement('div', { className: 'response-area' }, response)
+    ),
+    /* Quick Buttons */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '⚡ クイックアクション'),
+      React.createElement('div', { className: 'quick-grid' },
+        QUICK_BTNS.map(function(b) {
+          return React.createElement('button', {
+            key: b.label, className: 'quick-btn',
+            onClick: function() { showToast(b.label + ' を実行します（デモ）'); }
+          }, b.icon + ' ' + b.label);
+        })
+      )
+    ),
+    /* System Status */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '📡 キャラ状態'),
+      charaError
+        ? React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, 'API接続エラー')
+        : charaState === null
+          ? React.createElement('div', { style: { color: '#999', fontSize: '13px', padding: '8px 0' } }, '読み込み中...')
+          : charaState.map(function(s) {
+              return React.createElement('div', { key: s['キャラ名'], className: 'status-item' },
+                React.createElement('div', { className: 'status-left' },
+                  React.createElement('div', { className: 'status-dot ' + statusToDot(s['ステータス']) }),
+                  React.createElement('div', null,
+                    React.createElement('div', { className: 'status-name' }, s['キャラ名']),
+                    React.createElement('div', { className: 'status-desc' }, s['最終実行'] || s['ステータス'] || '')
+                  )
+                ),
+                React.createElement('div', { className: 'status-right' },
+                  React.createElement('div', { className: 'status-pct' },
+                    s['処理タスク数'] != null ? s['処理タスク数'] + 'タスク' : s['ステータス'] || ''
+                  )
+                )
+              );
+            })
+    )
+  );
+}
+
+/* ========== Congress Tab ========== */
+function CongressTab() {
+  const [title, setTitle] = useState('');
+  const [priority, setPriority] = useState('normal');
+  const [body, setBody] = useState('');
+
+  var handleSubmit = function() {
+    if (!title.trim()) { showToast('件名を入力してください'); return; }
+    showToast('法案「' + title + '」を提出しました（デモ）');
+    setTitle(''); setBody('');
+  };
+
+  var quickDeliberate = function(topic) {
+    showToast('「' + topic + '」を審議開始します（デモ）');
+  };
+
+  return React.createElement('div', null,
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '🏛️ 法案提出'),
+      React.createElement('div', { className: 'form-group' },
+        React.createElement('label', { className: 'form-label' }, '件名'),
+        React.createElement('input', { className: 'form-input', value: title,
+          onChange: function(e) { setTitle(e.target.value); }, placeholder: '法案タイトル' })
+      ),
+      React.createElement('div', { className: 'form-group' },
+        React.createElement('label', { className: 'form-label' }, '優先度'),
+        React.createElement('select', { className: 'form-select', value: priority,
+          onChange: function(e) { setPriority(e.target.value); } },
+          React.createElement('option', { value: 'high' }, '🔴 高'),
+          React.createElement('option', { value: 'normal' }, '🟡 中'),
+          React.createElement('option', { value: 'low' }, '🟢 低')
+        )
+      ),
+      React.createElement('div', { className: 'form-group' },
+        React.createElement('label', { className: 'form-label' }, '内容'),
+        React.createElement('textarea', { className: 'form-textarea', value: body,
+          onChange: function(e) { setBody(e.target.value); }, placeholder: '提案内容...' })
+      ),
+      React.createElement('button', { className: 'form-btn', onClick: handleSubmit }, '提出する')
+    ),
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '⚡ クイック審議'),
+      ['WSL→Win移行判断', 'EA新戦略レビュー', 'コスト最適化'].map(function(t) {
+        return React.createElement('button', {
+          key: t, className: 'form-btn-outline',
+          style: { marginBottom: '8px' },
+          onClick: function() { quickDeliberate(t); }
+        }, t);
+      })
+    )
+  );
+}
+
+/* ========== Progress Tab ========== */
+function ProgressTab() {
+  return React.createElement('div', null,
+    PROJECTS.map(function(p) {
+      return React.createElement('div', { key: p.name, className: 'card' },
+        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+          React.createElement('div', null,
+            React.createElement('div', { style: { fontSize: '14px', fontWeight: 600 } }, p.name),
+            React.createElement('div', { style: { fontSize: '12px', color: '#999', marginTop: '2px' } }, p.phase)
+          ),
+          React.createElement('div', { style: { fontSize: '18px', fontWeight: 700 } }, p.pct + '%')
+        ),
+        React.createElement('div', { className: 'progress-bar-wrap' },
+          React.createElement('div', { className: 'progress-bar-fill ' + p.color, style: { width: p.pct + '%' } })
+        ),
+        p.name === 'バスケ予約PWA' ? React.createElement('div', {
+          style: { marginTop: '8px', fontSize: '12px', color: '#dc2626', fontWeight: 600 }
+        }, '⚠️ 4/20 締切 — 残り12日') : null
+      );
+    })
+  );
+}
+
+/* ========== Inbox Tab ========== */
+function InboxTab() {
+  const [approvals, setApprovals] = useState(null);
+  const [approvalsError, setApprovalsError] = useState(false);
+  const [replyData, setReplyData] = useState(null);
+  const [replyError, setReplyError] = useState(false);
+
+  useEffect(function() {
+    fetch('/api/approvals')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(data) { setApprovals(data); })
+      .catch(function() { setApprovalsError(true); });
+
+    fetch('/api/reply')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(data) { setReplyData(data); })
+      .catch(function() { setReplyError(true); });
+  }, []);
+
+  var renderApprovals = function() {
+    if (approvalsError) {
+      return React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, 'API接続エラー');
+    }
+    if (approvals === null) {
+      return React.createElement('div', { style: { color: '#999', fontSize: '13px', padding: '8px 0' } }, '読み込み中...');
+    }
+    var pending = approvals.approvals || [];
+    var recent = approvals.recent || [];
+    if (pending.length === 0 && recent.length === 0) {
+      return React.createElement('div', { style: { color: '#999', fontSize: '13px', padding: '8px 0' } }, '承認待ちはありません');
+    }
+    var renderItems = function(items) {
+      return items.map(function(item, i) {
+        var label = item.instruction || item.task || item.title || JSON.stringify(item);
+        var sub = item.project ? item.project : (item.id ? 'id: ' + item.id : null);
+        return React.createElement('div', { key: i, className: 'log-item' },
+          sub ? React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+            React.createElement('span', { className: 'log-time' }, sub)
+          ) : null,
+          React.createElement('div', { className: 'log-msg' }, label)
+        );
+      });
+    };
+    return React.createElement('div', null,
+      pending.length > 0 ? React.createElement('div', null,
+        React.createElement('div', { className: 'section-header' }, '承認待ち（' + pending.length + '件）'),
+        renderItems(pending)
+      ) : null,
+      recent.length > 0 ? React.createElement('div', null,
+        React.createElement('div', { className: 'section-header' }, '最近の処理（' + recent.length + '件）'),
+        renderItems(recent)
+      ) : null
+    );
+  };
+
+  var renderReply = function() {
+    if (replyError) {
+      return React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, 'API接続エラー');
+    }
+    if (replyData === null) {
+      return React.createElement('div', { style: { color: '#999', fontSize: '13px', padding: '8px 0' } }, '読み込み中...');
+    }
+    var statusText = replyData.status === 'offline' ? 'tmux未起動（正常）' : (replyData.status || '不明');
+    var statusColor = replyData.status === 'offline' || replyData.status === 'online' ? '#999' : '#dc2626';
+    return React.createElement('div', null,
+      React.createElement('div', { style: { fontSize: '11px', color: statusColor, marginBottom: '6px' } }, 'ステータス: ' + statusText),
+      replyData.reply
+        ? React.createElement('div', { className: 'response-area', style: { marginBottom: '8px' } }, replyData.reply)
+        : null,
+      replyData.comment
+        ? React.createElement('div', { style: { fontSize: '12px', color: '#666', marginTop: '4px' } }, replyData.comment)
+        : null
+    );
+  };
+
+  return React.createElement('div', null,
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '📥 承認キュー'),
+      renderApprovals()
+    ),
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '💬 Claudeセッション出力'),
+      renderReply()
+    )
+  );
+}
+
+/* ========== Advisor Tab ========== */
+function AdvisorTab() {
+  const [queue, setQueue] = React.useState(null);
+  const [queueErr, setQueueErr] = React.useState(null);
+  const [schedules, setSchedules] = React.useState(null);
+  const [schedErr, setSchedErr] = React.useState(null);
+
+  React.useEffect(function() {
+    fetch('/api/advisory-queue')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(d) { setQueue(d.queue || []); })
+      .catch(function() { setQueueErr('API接続エラー'); });
+
+    fetch('/api/advisory-schedule')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(d) { setSchedules(d.jobs || []); })
+      .catch(function() { setSchedErr('API接続エラー'); });
+  }, []);
+
+  function dismiss(advisoryId, createdAt) {
+    fetch('/api/advisory/' + advisoryId + '/dismiss', { method: 'POST' })
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function() {
+        setQueue(function(prev) {
+          return prev.filter(function(q) { return q.created_at !== createdAt; });
+        });
+        showToast('提案を却下しました');
+      })
+      .catch(function() { showToast('却下に失敗しました'); });
+  }
+
+  var priorityColor = { high: '#dc2626', medium: '#d97706', low: '#6b7280' };
+  var priorityLabel = { high: '高', medium: '中', low: '低' };
+
+  return React.createElement('div', null,
+    /* セクション1: 監視ダッシュボード */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '🧠 監視ダッシュボード'),
+      React.createElement('div', { className: 'section-header' }, '稼働状態'),
+      [
+        { label: 'Kaizen Engine', val: '稼働中', ok: true },
+        { label: 'Log Aggregator', val: '稼働中', ok: true },
+        { label: 'Alert Monitor', val: '稼働中', ok: true },
+      ].map(function(s) {
+        return React.createElement('div', {
+          key: s.label,
+          style: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }
+        },
+          React.createElement('span', null, s.label),
+          React.createElement('span', { style: { color: s.ok ? '#22c55e' : '#dc2626', fontWeight: 600 } }, s.val)
+        );
+      })
+    ),
+    /* セクション2: 提案キュー */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '📋 提案キュー'),
+      queue === null && !queueErr
+        ? React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' } }, '読み込み中...')
+        : queueErr
+          ? React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, queueErr)
+          : queue.length === 0
+            ? React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' } }, '提案はありません')
+            : queue.map(function(item) {
+                const itemId = item.advisory_id;
+                const itemCreatedAt = item.created_at;
+                return React.createElement('div', {
+                  key: itemCreatedAt,
+                  style: { padding: '10px 0', borderBottom: '1px solid #f0f0f0' }
+                },
+                  React.createElement('div', {
+                    style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }
+                  },
+                    React.createElement('div', { style: { fontSize: '13px', fontWeight: 500, flex: 1, paddingRight: '8px' } }, item.title),
+                    React.createElement('span', {
+                      style: { fontSize: '11px', color: priorityColor[item.priority] || '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }
+                    }, priorityLabel[item.priority] || item.priority)
+                  ),
+                  React.createElement('div', { style: { fontSize: '12px', color: '#666', marginBottom: '8px' } }, item.summary),
+                  React.createElement('button', {
+                    className: 'form-btn-outline',
+                    style: { fontSize: '12px', padding: '4px 12px' },
+                    onClick: function() { dismiss(itemId, itemCreatedAt); }
+                  }, '却下')
+                );
+              })
+    ),
+    /* セクション3: 自律スケジュール */
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '📅 自律スケジュール'),
+      schedules === null && !schedErr
+        ? React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' } }, '読み込み中...')
+        : schedErr
+          ? React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, schedErr)
+          : schedules.map(function(s) {
+              return React.createElement('div', { key: s.job_id, className: 'schedule-item' },
+                React.createElement('div', null,
+                  React.createElement('div', { className: 'schedule-name' }, s.name),
+                  React.createElement('div', { className: 'schedule-time' }, s.schedule)
+                ),
+                React.createElement('span', {
+                  className: 'schedule-status ' + (s.last_result === 'success' ? 'sched-active' : 'sched-pending')
+                }, s.last_result === 'success' ? '稼働中' : '待機中')
+              );
+            })
+    )
+  );
+}
+
+/* ========== Learn Tab ========== */
+function LearnTab() {
+  const [items, setItems] = React.useState(null);
+  const [itemsErr, setItemsErr] = React.useState(null);
+  const [playState, setPlayState] = React.useState(null);
+  // playState = { id, segments, idx, paused } | null
+  const [progress, setProgress] = React.useState(0);
+  const [currentTime, setCurrentTime] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+  const [openMonths, setOpenMonths] = React.useState({});
+  var audioRef = React.useRef(null);
+  var synthRef = React.useRef(null);
+
+  function formatTime(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function seekAudio(ratio) {
+    if (audioRef.current && audioRef.current.duration) {
+      audioRef.current.currentTime = audioRef.current.duration * ratio;
+    }
+  }
+
+  function attachProgress(audio) {
+    audio.ontimeupdate = function() {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+        setCurrentTime(Math.floor(audio.currentTime));
+        setDuration(Math.floor(audio.duration));
+      }
+    };
+  }
+
+  function extractDate(item) {
+    var src = item.created || item.date || '';
+    if (src) return src.substring(0, 10); // "2026-03-26" に正規化
+    var m = item.title && item.title.match(/(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+    return null;
+  }
+
+  function formatMonthLabel(key) {
+    var parts = key.split('-');
+    return parts[0] + '年' + parseInt(parts[1]) + '月';
+  }
+
+  function groupByMonth(allItems) {
+    var series = [], rest = [];
+    allItems.forEach(function(item) {
+      if (item.id && item.id.startsWith('series-') || (item.title && /第\d+弾/.test(item.title))) {
+        series.push(item);
+      } else {
+        rest.push(item);
+      }
+    });
+    rest.sort(function(a, b) {
+      return (extractDate(b) || '').localeCompare(extractDate(a) || '');
+    });
+    var groups = {};
+    rest.forEach(function(item) {
+      var d = extractDate(item);
+      var key = d ? d.substring(0, 7) : 'other';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    });
+    var sortedKeys = Object.keys(groups).sort(function(a, b) {
+      if (a === 'other') return 1;
+      if (b === 'other') return -1;
+      return b.localeCompare(a);
+    });
+    var result = [];
+    sortedKeys.forEach(function(k) {
+      result.push({ key: k, label: k === 'other' ? 'その他' : formatMonthLabel(k), items: groups[k] });
+    });
+    if (series.length > 0) result.push({ key: 'series', label: '📚 勉強シリーズ', items: series });
+    return result;
+  }
+
+  function toggleMonth(monthKey) {
+    setOpenMonths(function(prev) {
+      return Object.assign({}, prev, { [monthKey]: !prev[monthKey] });
+    });
+  }
+
+  React.useEffect(function() {
+    fetch('/api/voice-library')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(d) {
+        var loaded = d.items || [];
+        setItems(loaded);
+        var groups = groupByMonth(loaded);
+        if (groups.length > 0) {
+          var init = {};
+          init[groups[0].key] = true;
+          setOpenMonths(init);
+        }
+      })
+      .catch(function() { setItemsErr('API接続エラー'); });
+  }, []);
+
+  function stopAudio() {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+    setProgress(0); setCurrentTime(0); setDuration(0);
+  }
+
+  function playSegmentByText(text, onEnd) {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 1.0;
+    u.onend = onEnd;
+    u.onerror = onEnd;
+    window.speechSynthesis.speak(u);
+  }
+
+  function playSegment(segments, idx, itemId) {
+    if (idx >= segments.length) {
+      setPlayState(null);
+      return;
+    }
+    var seg = segments[idx];
+    setPlayState({ id: itemId, segments: segments, idx: idx, paused: false });
+
+    function onEnd() {
+      playSegment(segments, idx + 1, itemId);
+    }
+
+    if (seg.url) {
+      var audio = new Audio(seg.url);
+      audioRef.current = audio;
+      attachProgress(audio);
+      audio.onended = onEnd;
+      audio.onerror = function() { onEnd(); };
+      audio.play().catch(function() { onEnd(); });
+    } else if (seg.cacheKey) {
+      fetch('/api/voice-audio/cache/' + seg.cacheKey)
+        .then(function(r) {
+          if (!r.ok) throw new Error('cache miss');
+          return r.blob();
+        })
+        .then(function(blob) {
+          var url = URL.createObjectURL(blob);
+          var audio = new Audio(url);
+          audioRef.current = audio;
+          attachProgress(audio);
+          audio.onended = function() { URL.revokeObjectURL(url); onEnd(); };
+          audio.onerror = function() { URL.revokeObjectURL(url); playSegmentByText(seg.text, onEnd); };
+          audio.play().catch(function() { playSegmentByText(seg.text, onEnd); });
+        })
+        .catch(function() { playSegmentByText(seg.text, onEnd); });
+    } else {
+      fetch('/api/voice-audio/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: seg.text, segmentId: itemId + '_ch_' + idx })
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error('generate failed');
+          return r.blob();
+        })
+        .then(function(blob) {
+          var url = URL.createObjectURL(blob);
+          var audio = new Audio(url);
+          audioRef.current = audio;
+          attachProgress(audio);
+          audio.onended = function() { URL.revokeObjectURL(url); onEnd(); };
+          audio.onerror = function() { URL.revokeObjectURL(url); playSegmentByText(seg.text, onEnd); };
+          audio.play().catch(function() { playSegmentByText(seg.text, onEnd); });
+        })
+        .catch(function() { playSegmentByText(seg.text, onEnd); });
+    }
+  }
+
+  function handlePlay(item) {
+    stopAudio();
+    fetch('/api/voice-library/play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id })
+    })
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(d) {
+        var segs = d.segments || [];
+        if (segs.length === 0) {
+          // MDなし → item.url を直接再生
+          if (item.url) {
+            playSegment([{ id: 'full', title: item.title, text: '', cacheKey: null, url: item.url }], 0, item.id);
+          }
+          return;
+        }
+        playSegment(segs, 0, item.id);
+      })
+      .catch(function() {
+        // API失敗でも item.url があれば再生
+        if (item.url) {
+          playSegment([{ id: 'full', title: item.title, text: '', cacheKey: null, url: item.url }], 0, item.id);
+        }
+      });
+  }
+
+  function handlePause(itemId) {
+    if (audioRef.current) {
+      if (audioRef.current.paused) {
+        audioRef.current.play().catch(function() {});
+        setPlayState(function(ps) { return ps ? Object.assign({}, ps, { paused: false }) : ps; });
+      } else {
+        audioRef.current.pause();
+        setPlayState(function(ps) { return ps ? Object.assign({}, ps, { paused: true }) : ps; });
+      }
+    } else if (window.speechSynthesis) {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+        setPlayState(function(ps) { return ps ? Object.assign({}, ps, { paused: false }) : ps; });
+      } else {
+        window.speechSynthesis.pause();
+        setPlayState(function(ps) { return ps ? Object.assign({}, ps, { paused: true }) : ps; });
+      }
+    }
+  }
+
+  function handleStop() {
+    stopAudio();
+    setPlayState(null);
+  }
+
+  return React.createElement('div', null,
+    React.createElement('div', { className: 'card' },
+      React.createElement('div', { className: 'card-title' }, '📚 音声教材ライブラリ'),
+      items === null && !itemsErr
+        ? React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' } }, '読み込み中...')
+        : itemsErr
+          ? React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', padding: '8px 0' } }, itemsErr)
+          : items.length === 0
+            ? React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' } }, '教材はありません')
+            : groupByMonth(items.filter(function(item) {
+                if (/full \d+$/i.test(item.title)) return false;
+                if (['テスト音声', '挨拶', 'クロージング'].includes(item.title)) return false;
+                return true;
+              })).map(function(group) {
+                var isOpen = !!openMonths[group.key];
+                return React.createElement('div', { key: group.key },
+                  React.createElement('div', {
+                    style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#F0EFEA', borderRadius: '8px', marginTop: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#333' },
+                    onClick: function() { toggleMonth(group.key); }
+                  },
+                    React.createElement('span', null, (isOpen ? '▼ ' : '▶ ') + group.label),
+                    React.createElement('span', { style: { fontSize: '11px', color: '#999', fontWeight: 400 } }, group.items.length + '件')
+                  ),
+                  isOpen ? group.items.map(function(item) {
+                    var isPlaying = playState && playState.id === item.id;
+                    var isPaused = isPlaying && playState.paused;
+                    var totalChaps = isPlaying ? playState.segments.length : (item.chapters || 0);
+                    var curChap = isPlaying ? playState.idx + 1 : 0;
+                    return React.createElement('div', {
+                      key: item.id,
+                      style: { padding: '10px 0', borderBottom: '1px solid #f0f0f0' }
+                    },
+                      React.createElement('div', { style: { fontSize: '13px', fontWeight: 500, marginBottom: '4px' } }, item.title),
+                      React.createElement('div', { style: { fontSize: '12px', color: '#666', marginBottom: '4px' } }, item.description),
+                      (item.chapters === 0 && item.duration_min === 0) ? null : React.createElement('div', { style: { fontSize: '11px', color: '#999', marginBottom: '6px' } },
+                        (item.chapters ? '全' + item.chapters + '章' : '') + '  /  ' + (item.duration_min ? item.duration_min + '分' : '')
+                      ),
+                      isPlaying && duration > 0
+                        ? React.createElement('div', { style: { marginTop: '4px', marginBottom: '4px' } },
+                            React.createElement('div', {
+                              style: { height: '4px', background: '#E8E6DF', borderRadius: '2px', overflow: 'hidden', cursor: 'pointer' },
+                              onClick: function(e) {
+                                var rect = e.currentTarget.getBoundingClientRect();
+                                seekAudio((e.clientX - rect.left) / rect.width);
+                              }
+                            },
+                              React.createElement('div', {
+                                style: { height: '100%', width: progress + '%', background: '#0F6E56', borderRadius: '2px', transition: 'width 0.3s' }
+                              })
+                            ),
+                            React.createElement('div', {
+                              style: { display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999', marginTop: '2px' }
+                            },
+                              React.createElement('span', null, formatTime(currentTime)),
+                              React.createElement('span', null, formatTime(duration))
+                            )
+                          )
+                        : null,
+                      React.createElement('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } },
+                        isPlaying
+                          ? React.createElement('button', {
+                              onClick: function() { handlePause(item.id); },
+                              style: { fontSize: '12px', padding: '4px 10px', background: '#0F6E56', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+                            }, isPaused ? '▶ 再開' : '⏸ 一時停止')
+                          : React.createElement('button', {
+                              onClick: function() { handlePlay(item); },
+                              style: { fontSize: '12px', padding: '4px 10px', background: '#0F6E56', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+                            }, '▶ 再生'),
+                        isPlaying
+                          ? React.createElement('button', {
+                              onClick: handleStop,
+                              style: { fontSize: '12px', padding: '4px 10px', background: '#666', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+                            }, '⏹ 停止')
+                          : null,
+                        isPlaying
+                          ? React.createElement('span', { style: { fontSize: '11px', color: '#0F6E56' } },
+                              curChap + '/' + totalChaps + '章')
+                          : null
+                      )
+                    );
+                  }) : null
+                );
+              })
+    )
+  );
+}
+
+/* ========== Tab Content Map ========== */
+var TAB_COMPONENTS = {
+  home: HomeTab,
+  congress: CongressTab,
+  progress: ProgressTab,
+  inbox: InboxTab,
+  advisor: AdvisorTab,
+  learn: LearnTab,
+};
+
+/* ========== App ========== */
+function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  var ActiveComponent = TAB_COMPONENTS[activeTab];
+  return React.createElement(React.Fragment, null,
+    React.createElement(ActiveComponent)
+  );
+}
+
+/* ========== Tab Bar (vanilla for always-visible) ========== */
+function renderTabBar(activeTab, setActiveTab) {
+  var bar = document.getElementById('tab-bar');
+  bar.innerHTML = '';
+  TABS.forEach(function(tab) {
+    var btn = document.createElement('button');
+    btn.className = 'tab-item' + (activeTab === tab.id ? ' active' : '');
+    btn.innerHTML = '<span class="tab-icon">' + tab.icon + '</span>' + tab.label;
+    btn.onclick = function() { setActiveTab(tab.id); };
+    bar.appendChild(btn);
+  });
+}
+
+/* ========== Mount ========== */
+var alertRoot = ReactDOM.createRoot(document.getElementById('alert-area'));
+alertRoot.render(React.createElement(AlertBanner));
+
+var mainRoot = ReactDOM.createRoot(document.getElementById('main-content'));
+
+function renderApp(tab) {
+  var Component = TAB_COMPONENTS[tab];
+  mainRoot.render(React.createElement(Component));
+  renderTabBar(tab, function(newTab) { renderApp(newTab); });
+}
+
+renderApp('home');
+</script>
+</body>
+</html>

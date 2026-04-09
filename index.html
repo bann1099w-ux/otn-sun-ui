@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<title>コマンドセンター</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+/* === RESET & BASE === */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,sans-serif;background:#F5F5F0;color:#1A1A1A;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* === HEADER === */
+#header{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.12);padding:10px 16px 0;position:sticky;top:0;z-index:100}
+#header-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px}
+#header-sub{font-size:11px;color:#9B9B9B;letter-spacing:0.02em}
+#header-main{font-size:18px;font-weight:600;color:#1A1A1A;letter-spacing:-0.02em}
+#menu-btn{background:none;border:none;cursor:pointer;padding:4px;color:#6B6B6B;font-size:20px;line-height:1}
+
+/* === TABBAR === */
+#tabbar{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:0.5px solid rgba(0,0,0,0.12)}
+#tabbar::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:8px 12px;font-size:13px;color:#9B9B9B;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:color 0.15s;font-family:inherit;position:relative}
+.tab.active{color:#1A1A1A;border-bottom:2px solid #1A1A1A}
+.tab-badge{position:absolute;top:5px;right:4px;background:#D97706;color:#fff;font-size:9px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
+
+/* === CONTENT === */
+#content{flex:1;overflow-y:auto;padding:12px 12px 80px}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* === CARD === */
+.card{background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.15);padding:14px 16px;margin-bottom:10px}
+.card-title{font-size:12px;color:#9B9B9B;margin-bottom:8px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase}
+
+/* === TEXTAREA === */
+textarea{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;min-height:80px;color:#1A1A1A;background:#fff;outline:none;transition:border-color 0.15s}
+textarea:focus{border-color:rgba(0,0,0,0.35)}
+textarea::placeholder{color:#B0B0B0}
+
+/* === BUTTONS === */
+.btn{background:transparent;border:0.5px solid rgba(0,0,0,0.3);border-radius:8px;padding:7px 14px;font-size:12px;font-family:inherit;color:#1A1A1A;cursor:pointer;transition:background 0.1s,transform 0.1s;white-space:nowrap}
+.btn:active{background:rgba(0,0,0,0.06);transform:scale(0.98)}
+.btn-primary{background:#1A1A1A;color:#fff;border-color:#1A1A1A}
+.btn-primary:active{background:#333}
+.btn-danger{border-color:rgba(226,75,74,0.5);color:#E24B4A}
+.btn-danger:active{background:#FCEBEB}
+.btn-warning{background:#D97706;color:#fff;border-color:#D97706}
+.btn-warning:active{background:#B45309}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+button:disabled{opacity:0.5;pointer-events:none}
+
+/* === STATUS DOTS === */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-green{background:#1D9E75}
+.dot-yellow{background:#EF9F27}
+.dot-gray{background:#B4B2A9}
+.dot-red{background:#E24B4A}
+
+/* === SYSTEM GRID === */
+#sys-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sys-card{background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.15);padding:12px 14px;cursor:pointer;transition:background 0.1s}
+.sys-card:active{background:#F5F5F0}
+.sys-card-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.sys-card-name{font-size:13px;font-weight:600}
+.sys-card-desc{font-size:11px;color:#6B6B6B}
+
+/* === PROGRESS === */
+.progress-wrap{margin-top:6px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#6B6B6B;margin-bottom:4px}
+.progress-track{height:6px;border-radius:3px;background:#F0F0F0;overflow:hidden}
+.progress-bar{height:100%;border-radius:3px;transition:width 0.6s ease}
+
+/* === BADGES === */
+.badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;display:inline-block}
+.badge-deadline{background:#FCEBEB;color:#791F1F}
+.badge-passed{background:#E6F7F1;color:#0D6E50}
+.badge-pending{background:#FEF6E7;color:#8A5C0A}
+.badge-rejected{background:#FCEBEB;color:#791F1F}
+.badge-neutral{background:#F0F0F0;color:#6B6B6B}
+
+/* === REPORTS === */
+.report-item{padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.08);display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.report-item:last-child{border-bottom:none}
+.report-dot{margin-top:4px}
+.report-body{flex:1;min-width:0}
+.report-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-meta{font-size:11px;color:#9B9B9B;margin-top:2px}
+
+/* === BILLS === */
+.bill-item{padding:10px 12px;border-radius:8px;margin-bottom:6px;background:#FAFAFA;border:0.5px solid rgba(0,0,0,0.08);border-left:3px solid #B4B2A9}
+.bill-item.passed{border-left-color:#1D9E75}
+.bill-item.rejected{border-left-color:#E24B4A}
+.bill-item.pending{border-left-color:#EF9F27}
+.bill-item.hold{border-left-color:#B4B2A9}
+.bill-title{font-size:13px;font-weight:500}
+.bill-meta{font-size:11px;color:#9B9B9B;margin-top:3px}
+
+/* === AUDIO === */
+.audio-item{padding:9px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+.audio-item:last-child{border-bottom:none}
+.audio-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.audio-info{flex:1;min-width:0}
+.audio-title{font-size:13px;font-weight:500}
+.audio-desc{font-size:11px;color:#666;margin-top:2px;line-height:1.4}
+.audio-meta{font-size:11px;color:#9B9B9B;margin-top:2px}
+.audio-player{margin-top:8px;width:100%}
+.audio-player audio{width:100%;height:36px}
+/* 月別アコーディオン */
+.month-group{margin-bottom:8px;border:0.5px solid #E0E0E0;border-radius:10px;overflow:hidden}
+.month-header{display:flex;align-items:center;padding:10px 14px;background:#F7F7F7;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.month-header:active{background:#EFEFEF}
+.month-label{font-size:13px;font-weight:600;flex:1}
+.month-count{font-size:11px;color:#9B9B9B;margin-right:8px}
+.month-arrow{font-size:11px;color:#BBBBBB;transition:transform 0.2s}
+.month-body{padding:0 12px}
+.cat-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:#E8F4EE;color:#1D9E75;margin-bottom:3px;font-weight:500}
+
+/* === RULES === */
+.rule-section{margin-bottom:14px}
+.rule-section:last-child{margin-bottom:0}
+.rule-section h3{font-size:13px;font-weight:600;margin-bottom:6px;color:#1A1A1A}
+.rule-item{font-size:13px;color:#1A1A1A;padding:6px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);line-height:1.5}
+.rule-item:last-child{border-bottom:none}
+.rule-num{color:#9B9B9B;font-size:11px;margin-right:6px}
+
+/* === FILTER === */
+.filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filter-btn{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.2);background:transparent;cursor:pointer;color:#6B6B6B;transition:all 0.1s;font-family:inherit}
+.filter-btn.active{background:#1A1A1A;color:#fff;border-color:#1A1A1A}
+
+/* === LOADER === */
+.loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,0.1);border-top-color:#1A1A1A;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* === EMPTY STATE === */
+.empty{text-align:center;color:#9B9B9B;font-size:13px;padding:32px 0}
+
+/* === TOAST === */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap;max-width:calc(100% - 32px);text-align:center}
+#toast.show{opacity:1}
+
+/* === MENU DROPDOWN === */
+#menu-wrap{position:relative}
+#menu-dropdown{position:absolute;right:0;top:32px;background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.15);box-shadow:0 4px 20px rgba(0,0,0,0.12);z-index:200;min-width:160px;overflow:hidden;display:none}
+#menu-dropdown.open{display:block}
+.menu-item{display:block;width:100%;text-align:left;padding:11px 16px;font-size:13px;font-family:inherit;color:#1A1A1A;background:none;border:none;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,0.06)}
+.menu-item:last-child{border-bottom:none}
+.menu-item:active{background:#F5F5F0}
+
+/* === MODAL === */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:flex-end}
+#modal-overlay.open{display:flex}
+#modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 36px;width:100%;max-height:75vh;overflow-y:auto}
+#modal-handle{width:36px;height:4px;background:rgba(0,0,0,0.12);border-radius:2px;margin:0 auto 16px}
+#modal-title{font-size:16px;font-weight:600;margin-bottom:12px}
+#modal-body{font-size:13px;line-height:1.7;color:#1A1A1A;white-space:pre-wrap}
+#modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:#9B9B9B;margin-top:-4px;line-height:1}
+
+/* === FORM INPUT === */
+input[type="text"]{border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1A1A1A;background:#fff;outline:none;min-width:0}
+input[type="text"]:focus{border-color:rgba(0,0,0,0.35)}
+.form-row{display:flex;gap:6px;align-items:center;margin-top:10px}
+.form-row input{flex:1}
+
+/* === DEADLINE ALERTS === */
+.alert-red{padding:8px 12px;background:#FCEBEB;border-radius:8px;margin-bottom:6px}
+.alert-yellow{padding:8px 12px;background:#FEF6E7;border-radius:8px;margin-bottom:6px}
+.alert-red:last-child,.alert-yellow:last-child{margin-bottom:0}
+
+/* === PENDING TASKS === */
+.task-item{padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:8px}
+.task-item:last-child{border-bottom:none}
+
+/* === TOGGLE SWITCH === */
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:#D1D5DB;border-radius:11px;transition:background 0.2s}
+.toggle input:checked + .toggle-track{background:#1D9E75}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(18px)}
+
+/* === PRIORITY COLORS === */
+.priority-high{color:#DC2626;font-weight:600}
+.priority-medium{color:#D97706;font-weight:600}
+.priority-low{color:#6B7280}
+
+/* === MONITORING CARDS === */
+.monitor-card{background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.15);padding:12px 14px;margin-bottom:8px}
+.monitor-card.alert{border-color:rgba(226,75,74,0.4);background:#FFFAFA}
+.monitor-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.monitor-card-title{font-size:13px;font-weight:600}
+.monitor-kpi{font-size:12px;color:#6B6B6B;margin-bottom:4px;line-height:1.5}
+.monitor-kpi .alert-val{color:#DC2626;font-weight:600}
+
+/* === ADVISORY CARDS === */
+.advisory-card{background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.15);padding:14px;margin-bottom:8px}
+.advisory-card-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.advisory-priority{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}
+.advisory-priority.high{background:#FEE2E2;color:#DC2626}
+.advisory-priority.medium{background:#FEF3C7;color:#D97706}
+.advisory-priority.low{background:#F0F0F0;color:#6B7280}
+.advisory-category{font-size:11px;color:#9B9B9B}
+.advisory-date{font-size:11px;color:#9B9B9B;margin-left:auto}
+.advisory-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.advisory-summary{font-size:12px;color:#6B6B6B;line-height:1.5;margin-bottom:10px}
+.advisory-detail{font-size:12px;color:#1A1A1A;line-height:1.6;white-space:pre-wrap;margin-bottom:10px;padding:10px;background:#F5F5F0;border-radius:8px;display:none}
+
+/* === SCHEDULE TABLE === */
+.schedule-item{padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:10px}
+.schedule-item:last-child{border-bottom:none}
+.schedule-info{flex:1;min-width:0}
+.schedule-name{font-size:13px;font-weight:500}
+.schedule-meta{font-size:11px;color:#9B9B9B;margin-top:2px}
+.schedule-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div id="header">
+  <div id="header-top">
+    <div id="header-title">
+      <span id="header-sub">BIGBAN guild production</span>
+      <span id="header-main">コマンドセンター</span>
+    </div>
+    <div id="menu-wrap">
+      <button id="menu-btn" onclick="toggleMenu()" aria-label="メニュー">⋮</button>
+      <div id="menu-dropdown">
+        <button class="menu-item" onclick="closeMenu();showClaudeMd()">CLAUDE.md 確認</button>
+        <button class="menu-item" onclick="closeMenu();switchTab(0);loadStatus()">ステータス更新</button>
+        <button class="menu-item" onclick="closeMenu();showVersionInfo()">バージョン情報</button>
+        <button class="menu-item" onclick="closeMenu();confirmClearCache()">キャッシュ消去</button>
+      </div>
+    </div>
+  </div>
+  <div id="tabbar">
+    <button class="tab active" onclick="switchTab(0)">ホーム</button>
+    <button class="tab" onclick="switchTab(1)">国会</button>
+    <button class="tab" onclick="switchTab(2)">進捗</button>
+    <button class="tab" onclick="switchTab(3)">受信箱</button>
+    <button class="tab" id="tab-sansho-btn" onclick="switchTab(4)">参謀</button>
+    <button class="tab" onclick="switchTab(5)">学習</button>
+    <button class="tab" onclick="switchTab(6)">規約</button>
+  </div>
+</div>
+
+<!-- コンテンツ -->
+<div id="content">
+
+  <!-- タブ0: ホーム -->
+  <div class="tab-pane active" id="tab-0">
+
+    <div class="card">
+      <div class="card-title">CLAUDE への指示</div>
+      <textarea id="instruction-input" placeholder="指示を入力…" rows="3"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="send-btn" onclick="sendInstruction()">送信</button>
+        <button class="btn" onclick="downloadDecision()">決定事項 DL</button>
+        <button class="btn" onclick="document.getElementById('file-input').click()">添付</button>
+        <input type="file" id="file-input" style="display:none" multiple accept="image/*,.txt,.md,.json,.csv" onchange="handleAttach(this)">
+      </div>
+      <div id="attach-preview" style="margin-top:6px;font-size:12px;color:#6B6B6B"></div>
+    </div>
+
+    <div class="card" id="reply-card" style="display:none">
+      <div class="card-title">返信</div>
+      <div id="reply-text" style="font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:160px;overflow-y:auto;color:#1A1A1A"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="copyReply()">コピー</button>
+        <button class="btn" onclick="document.getElementById('reply-card').style.display='none'">閉じる</button>
+      </div>
+    </div>
+
+    <!-- セッション管理カード -->
+    <div class="card">
+      <div class="card-title">Claudeセッション</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="dot dot-gray" id="session-dot"></span>
+        <span id="session-status-text" style="font-size:13px;color:#1A1A1A">確認中…</span>
+        <span id="session-elapsed" style="font-size:11px;color:#9B9B9B;margin-left:auto"></span>
+      </div>
+      <div id="session-instruction-preview" style="font-size:12px;color:#6B6B6B;margin-bottom:8px;min-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startNewSession()">新規セッション</button>
+        <button class="btn" id="stop-session-btn" onclick="stopSession()" style="display:none">停止</button>
+      </div>
+    </div>
+
+    <!-- 承認待ちカード（Level2承認が必要な場合のみ表示） -->
+    <div class="card" id="pending-approvals-card" style="display:none">
+      <div class="card-title" style="display:flex;align-items:center;gap:6px">
+        承認待ち
+        <span id="pending-count" style="background:#FF3B30;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700">0</span>
+      </div>
+      <div id="pending-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">クイックアクション</div>
+      <div class="btn-row">
+        <button class="btn" onclick="quickAction('今日のTODOを全システム横断でリストアップしてください')">今日のTODO</button>
+        <button class="btn" onclick="quickAction('5 Whysの最新ログを表示してください')">Kaizen確認</button>
+        <button class="btn" onclick="quickAction('Claude Code Windows native化の手順を教えてください')">CC移行</button>
+        <button class="btn" onclick="quickAction('WSL旧環境の削除手順を教えてください')">WSL片付け</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">システム</div>
+      <div id="sys-grid">
+        <div class="sys-card" onclick="openSystem('O-TN-SUN')">
+          <div class="sys-card-header">
+            <span class="dot dot-gray" id="dot-otn"></span>
+            <span class="sys-card-name">O-TN-SUN</span>
+          </div>
+          <div class="sys-card-desc" id="desc-otn">確認中…</div>
+        </div>
+        <div class="sys-card" onclick="openSystem('バスケPWA')">
+          <div class="sys-card-header">
+            <span class="dot dot-yellow" id="dot-basket"></span>
+            <span class="sys-card-name">バスケPWA</span>
+          </div>
+          <div class="sys-card-desc" id="desc-basket">移行中</div>
+        </div>
+        <div class="sys-card" onclick="openSystem('SRROE v4A')">
+          <div class="sys-card-header">
+            <span class="dot dot-green" id="dot-srroe"></span>
+            <span class="sys-card-name">SRROE v4A</span>
+          </div>
+          <div class="sys-card-desc" id="desc-srroe">フォワードテスト中</div>
+        </div>
+        <div class="sys-card" onclick="openSystem('Market Voice')">
+          <div class="sys-card-header">
+            <span class="dot dot-green" id="dot-mv"></span>
+            <span class="sys-card-name">Market Voice</span>
+          </div>
+          <div class="sys-card-desc" id="desc-mv">Windows移行完了</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-0 -->
+
+  <!-- タブ1: 国会 -->
+  <div class="tab-pane" id="tab-1">
+
+    <div class="card">
+      <div class="card-title">法案を提出する</div>
+      <textarea id="bill-input" placeholder="変更内容を記述してください…" rows="4"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="bill-submit-btn" onclick="submitBill()">審議に提出</button>
+        <button class="btn" onclick="checkConstitution()">違憲審査</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">クイック審議</div>
+      <div class="btn-row">
+        <button class="btn" onclick="quickBill('WSL完全廃止の影響範囲を分析してください')">WSL廃止分析</button>
+        <button class="btn" onclick="quickBill('Pattern D対策について審議してください')">Pattern D対策</button>
+        <button class="btn" onclick="quickBill('Claude Code Windows native化の影響と工数を分析してください')">CC native化</button>
+      </div>
+    </div>
+
+    <div class="card" id="bill-result-card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">審議結果</div>
+        <span id="bill-id-label" style="font-size:10px;color:#9B9B9B;font-family:monospace"></span>
+      </div>
+      <div id="bill-result-text" style="font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:240px;overflow-y:auto;color:#1A1A1A"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-primary" onclick="decideBill('passed')">可決</button>
+        <button class="btn btn-danger" onclick="decideBill('rejected')">否決</button>
+        <button class="btn" onclick="decideBill('hold')">保留</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">議決履歴</div>
+      <div id="bill-history"></div>
+    </div>
+
+  </div><!-- /tab-1 -->
+
+  <!-- タブ2: 進捗 -->
+  <div class="tab-pane" id="tab-2">
+
+    <div class="card">
+      <div class="card-title">プロジェクト進捗</div>
+      <div id="progress-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">締切アラート</div>
+      <div class="alert-red">
+        <div style="font-size:13px;font-weight:600;color:#791F1F">バスケPWA — 4/20 抽選</div>
+        <div style="font-size:11px;color:#791F1F;margin-top:2px">4/23 利用申請期限</div>
+      </div>
+      <div class="alert-yellow">
+        <div style="font-size:13px;font-weight:600;color:#8A5C0A">SRROE v4A — 7月 評価期限</div>
+        <div style="font-size:11px;color:#8A5C0A;margin-top:2px">PF≥1.2・勝率≥60%・DD≤15%</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">残タスク</div>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="loadPendingTasks()">更新</button>
+      </div>
+      <div id="pending-task-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <button class="btn" style="width:100%;margin-bottom:10px" onclick="requestRoadmap()">ロードマップ全体を生成</button>
+
+  </div><!-- /tab-2 -->
+
+  <!-- タブ3: 受信箱 -->
+  <div class="tab-pane" id="tab-3">
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterReports('all',this)">すべて</button>
+      <button class="filter-btn" onclick="filterReports('unread',this)">未読</button>
+      <button class="filter-btn" onclick="filterReports('error',this)">エラー</button>
+      <button class="filter-btn" onclick="filterReports('advisory',this)">提案</button>
+    </div>
+
+    <div class="card">
+      <div id="report-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+  </div><!-- /tab-3 -->
+
+  <!-- タブ4: 参謀 -->
+  <div class="tab-pane" id="tab-4">
+
+    <!-- セクション1: 監視ダッシュボード -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px">
+      <div style="font-size:12px;color:#9B9B9B;font-weight:500;letter-spacing:0.03em;text-transform:uppercase">監視ダッシュボード</div>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="loadMonitorCards()">更新</button>
+    </div>
+    <div id="monitor-cards"><div class="card"><div class="empty">読み込み中…</div></div></div>
+
+    <!-- セクション2: 提案キュー -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px">
+      <div style="font-size:12px;color:#9B9B9B;font-weight:500;letter-spacing:0.03em;text-transform:uppercase">提案キュー</div>
+      <div class="filter-row" style="margin-bottom:0">
+        <button class="filter-btn active" style="padding:4px 10px;font-size:11px" onclick="filterAdvisory('all',this)">すべて</button>
+        <button class="filter-btn" style="padding:4px 10px;font-size:11px" onclick="filterAdvisory('high',this)">高優先</button>
+        <button class="filter-btn" style="padding:4px 10px;font-size:11px" onclick="filterAdvisory('trade',this)">トレード</button>
+        <button class="filter-btn" style="padding:4px 10px;font-size:11px" onclick="filterAdvisory('system',this)">システム</button>
+      </div>
+    </div>
+    <div id="advisory-queue"><div class="card"><div class="empty">読み込み中…</div></div></div>
+
+    <!-- セクション3: 自律スケジュール -->
+    <div style="font-size:12px;color:#9B9B9B;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;margin-bottom:8px;padding:0 2px">自律スケジュール</div>
+    <div class="card">
+      <div id="schedule-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+  </div><!-- /tab-4 -->
+
+  <!-- タブ5: 学習 -->
+  <div class="tab-pane" id="tab-5">
+
+    <div class="card">
+      <div class="card-title">日次振り返り</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateReview()">今日の振り返り音声を生成</button>
+      </div>
+      <div id="review-status" style="margin-top:8px;font-size:12px;color:#6B6B6B"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">定時レポート（メイ）</div>
+      <div class="btn-row">
+        <button class="btn" onclick="generateReport('morning')">朝レポート</button>
+        <button class="btn" onclick="generateReport('evening')">夕レポート</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">TTS辞書</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px">登録エントリ数: <strong id="tts-count">—</strong></span>
+        <button class="btn" onclick="loadTtsDict()">更新</button>
+      </div>
+      <div id="tts-preview" style="margin-top:8px;max-height:80px;overflow-y:auto;font-size:12px;color:#6B6B6B;font-family:monospace;line-height:1.6"></div>
+      <div class="form-row">
+        <input type="text" id="tts-word" placeholder="単語">
+        <input type="text" id="tts-reading" placeholder="読み">
+        <button class="btn" onclick="addTtsEntry()">追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">音声教材アーカイブ</div>
+      <div id="audio-archive"><div class="empty">読み込み中…</div></div>
+    </div>
+
+  </div><!-- /tab-5 -->
+
+  <!-- タブ6: 規約 -->
+  <div class="tab-pane" id="tab-6">
+
+    <div class="card">
+      <div class="rule-section">
+        <h3>基本三原則</h3>
+        <div class="rule-item"><span class="rule-num">第1条</span>セキュリティ最優先</div>
+        <div class="rule-item"><span class="rule-num">第2条</span>全履歴を詳細に残す</div>
+        <div class="rule-item"><span class="rule-num">第3条</span>コスト最小化（ステージゲート方式）</div>
+      </div>
+      <div class="rule-section">
+        <h3>禁止事項</h3>
+        <div class="rule-item">勝手に機能を追加しない</div>
+        <div class="rule-item">後出し情報を出さない</div>
+      </div>
+      <div class="rule-section">
+        <h3>運用ルール</h3>
+        <div class="rule-item">2チャット生産方式（Chat1=設計 → Chat2=指示書、1:1厳守）</div>
+        <div class="rule-item">BIGBAN KnowledgeBase 3層自動読み込み防御</div>
+        <div class="rule-item">外部監査3層構造（AI数値 / 妻(体調) / 兄弟(成果物)）</div>
+        <div class="rule-item">EA基準値: PF≥1.5 / DD≤20% / Sharpe≥1.0 / 1000trades+</div>
+      </div>
+      <div class="rule-section">
+        <h3>Kaizenプロトコル</h3>
+        <div class="rule-item">5 Whys予測検証構造</div>
+        <div class="rule-item">改善 → 検証 → 記録の三工程</div>
+        <button class="btn" style="margin-top:8px;font-size:11px;padding:5px 12px" onclick="loadKaizenProtocol()">kaizen_loop_protocol.txt を表示</button>
+      </div>
+    </div>
+
+    <!-- CLAUDE.md セクション -->
+    <div class="card" id="claude-md-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">CLAUDE.md</div>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="refreshClaudeMd()">更新</button>
+      </div>
+      <div id="claude-md-text" style="font-size:12px;line-height:1.7;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:#1A1A1A">読み込み中…</div>
+    </div>
+
+    <!-- KnowledgeBase セクション -->
+    <div class="card" id="knowledge-base-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">KnowledgeBase <span id="kb-count" style="font-size:11px;color:#888;font-weight:normal"></span></div>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="refreshKnowledgeBase()">更新</button>
+      </div>
+      <div id="knowledge-base-list" style="font-size:12px;line-height:1.7;color:#1A1A1A">読み込み中…</div>
+    </div>
+
+    <!-- Kaizenプロトコル詳細（ボタンタップ時） -->
+    <div class="card" id="rule-detail-card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" id="rule-detail-title" style="margin-bottom:0"></div>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('rule-detail-card').style.display='none'">閉じる</button>
+      </div>
+      <div id="rule-detail-text" style="font-size:12px;line-height:1.7;white-space:pre-wrap;max-height:350px;overflow-y:auto;color:#1A1A1A"></div>
+    </div>
+
+  </div><!-- /tab-6 -->
+
+</div><!-- /content -->
+
+<!-- モーダル（ボトムシート） -->
+<div id="modal-overlay" onclick="closeModalOutside(event)">
+  <div id="modal">
+    <div id="modal-handle"></div>
+    <button id="modal-close" onclick="closeModal()">×</button>
+    <div id="modal-title"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div id="toast"></div>
+
+<script>
+// ==================== 状態管理 ====================
+const S = {
+  activeTab: 0,
+  attachedFiles: [],
+  pendingBill: null,
+  reports: [],
+  reportFilter: 'all',
+  billHistory: JSON.parse(localStorage.getItem('billHistory') || '[]'),
+  billCounter: parseInt(localStorage.getItem('billCounter') || '0'),
+  replyPoller: null,
+  advisory: [],
+  advisoryFilter: 'all',
+  schedule: [],
+};
+
+// ==================== タブ切替 ====================
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-pane').forEach((p,i) => p.classList.toggle('active', i===idx));
+  S.activeTab = idx;
+  closeMenu();
+  if(idx===0) { loadStatus(); loadSessionStatus(); loadPendingApprovals(); }
+  if(idx===1) renderBillHistory();
+  if(idx===2) loadProgress();
+  if(idx===3) loadReports();
+  if(idx===4) loadSansho();
+  if(idx===5) { loadTtsDict(); loadAudioArchive(); }
+  if(idx===6) loadRegulationTab();
+}
+
+// ==================== トースト ====================
+let _toastTimer = null;
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ==================== ログ（第2条: 全履歴保存） ====================
+function logAction(action, data={}) {
+  const entry = { action, timestamp: new Date().toISOString(), tab: S.activeTab, ...data };
+  fetch('/api/log', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(entry)
+  }).catch(() => {});
+}
+
+// ==================== 返信ポーリング（共用） ====================
+function startReplyPoller(attempt, cardId, textId) {
+  if(S.replyPoller) clearTimeout(S.replyPoller);
+  if(attempt > 30) return;
+  S.replyPoller = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/reply');
+      const d = await r.json();
+      if(d.reply) {
+        const card = document.getElementById(cardId);
+        const text = document.getElementById(textId);
+        if(card && text) {
+          text.textContent = d.reply;
+          card.style.display = 'block';
+          card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        }
+        return;
+      }
+    } catch(e) {}
+    startReplyPoller(attempt+1, cardId, textId);
+  }, 3000);
+}
+
+// ==================== ホームタブ ====================
+async function sendInstruction() {
+  const input = document.getElementById('instruction-input');
+  const instruction = input.value.trim();
+  if(!instruction && S.attachedFiles.length===0) { toast('指示を入力してください'); return; }
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>送信中';
+  try {
+    const r = await fetch('/api/instruct', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instruction, attachments: S.attachedFiles })
+    });
+    const d = await r.json();
+    if(d.ok) {
+      logAction('send_instruction', { preview: instruction.slice(0,60) });
+      toast('送信しました');
+      input.value = '';
+      S.attachedFiles = [];
+      document.getElementById('attach-preview').textContent = '';
+      startReplyPoller(0, 'reply-card', 'reply-text');
+    } else {
+      toast('エラー: ' + (d.error||'不明'));
+    }
+  } catch(e) { toast('通信エラー'); }
+  btn.disabled = false;
+  btn.innerHTML = '送信';
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/status');
+    if(!r.ok) return;
+    const d = await r.json();
+    const otn = d['O-TN-SUN'] || d;
+    const phase = otn.phase || '';
+    const updated = otn.updated
+      ? new Date(otn.updated).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})
+      : '';
+    setDot('dot-otn', phase==='エラー'?'red':'green');
+    document.getElementById('desc-otn').textContent = (phase||'稼働中') + (updated?' '+updated:'');
+    const sys = d.systems || {};
+    applySystemStatus(sys['バスケPWA'],    'dot-basket', 'desc-basket', '移行中');
+    applySystemStatus(sys['SRROE'],        'dot-srroe',  'desc-srroe',  'フォワードテスト中');
+    applySystemStatus(sys['Market Voice'], 'dot-mv',     'desc-mv',     'Windows移行完了');
+  } catch(e) {}
+}
+
+function applySystemStatus(info, dotId, descId, defaultDesc) {
+  if(!info) return;
+  setDot(dotId, statusToColor(info.status));
+  document.getElementById(descId).textContent = info.desc || defaultDesc;
+}
+
+function statusToColor(s) {
+  const v = String(s||'').toLowerCase();
+  if(v==='active'||v==='稼働中'||v==='ok') return 'green';
+  if(v==='warning'||v==='移行中'||v==='migrating') return 'yellow';
+  if(v==='error'||v==='エラー') return 'red';
+  return 'gray';
+}
+
+function setDot(id, color) {
+  const el = document.getElementById(id);
+  if(el) el.className = 'dot dot-' + color;
+}
+
+async function handleAttach(input) {
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  const fd = new FormData();
+  files.forEach(f => fd.append('file', f));
+  try {
+    const r = await fetch('/api/upload', { method:'POST', body: fd });
+    const d = await r.json();
+    if(d.ok) {
+      S.attachedFiles.push(...(d.paths||[]));
+      document.getElementById('attach-preview').textContent = `添付: ${S.attachedFiles.length}件`;
+      logAction('attach_file', { count: S.attachedFiles.length });
+      toast('添付しました');
+    }
+  } catch(e) { toast('添付エラー'); }
+  input.value = '';
+}
+
+function downloadDecision() {
+  const instruction = document.getElementById('instruction-input').value.trim();
+  const reply = document.getElementById('reply-text')?.textContent.trim() || '';
+  const ts = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  let content = `# 決定事項\n日時: ${new Date().toLocaleString('ja-JP')}\n\n`;
+  if(instruction) content += `## 指示\n${instruction}\n\n`;
+  if(reply) content += `## Claude返答\n${reply}\n`;
+  const blob = new Blob([content], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `decision_${ts}.md`;
+  a.click();
+  logAction('download_decision');
+}
+
+function copyReply() {
+  navigator.clipboard.writeText(document.getElementById('reply-text').textContent)
+    .then(() => toast('コピーしました'))
+    .catch(() => toast('コピーできませんでした'));
+}
+
+function quickAction(instruction) {
+  document.getElementById('instruction-input').value = instruction;
+  document.getElementById('instruction-input').focus();
+}
+
+function openSystem(name) {
+  quickAction(`${name}の状態を確認してください`);
+  logAction('open_system', { system: name });
+}
+
+// ==================== セッション管理 ====================
+let _sessionPollTimer = null;
+let _approvalPollTimer = null;
+
+async function loadSessionStatus() {
+  try {
+    const r = await fetch('/api/session-status');
+    if (!r.ok) return;
+    const d = await r.json();
+    const dot = document.getElementById('session-dot');
+    const txt = document.getElementById('session-status-text');
+    const elapsed = document.getElementById('session-elapsed');
+    const preview = document.getElementById('session-instruction-preview');
+    const stopBtn = document.getElementById('stop-session-btn');
+    if (d.running) {
+      dot.className = 'dot dot-green';
+      txt.textContent = '実行中';
+      stopBtn.style.display = '';
+      if (d.started_at) {
+        const sec = Math.round((Date.now() - new Date(d.started_at).getTime()) / 1000);
+        elapsed.textContent = sec < 60 ? `${sec}秒` : `${Math.floor(sec/60)}分${sec%60}秒`;
+      }
+      preview.textContent = d.instruction || '';
+    } else {
+      dot.className = 'dot dot-gray';
+      txt.textContent = 'アイドル';
+      stopBtn.style.display = 'none';
+      elapsed.textContent = '';
+      preview.textContent = d.instruction ? `最終: ${d.instruction}` : '';
+    }
+  } catch(e) {}
+}
+
+async function startNewSession() {
+  const instruction = document.getElementById('instruction-input').value.trim();
+  try {
+    const r = await fetch('/api/session-new', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instruction })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('新規セッション開始');
+      if (instruction) {
+        document.getElementById('instruction-input').value = '';
+        startReplyPoller(0, 'reply-card', 'reply-text');
+      }
+      setTimeout(loadSessionStatus, 500);
+    } else {
+      toast('エラー: ' + (d.error || '不明'));
+    }
+  } catch(e) { toast('通信エラー'); }
+}
+
+async function stopSession() {
+  try {
+    const r = await fetch('/api/session-stop', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const d = await r.json();
+    toast(d.message || '停止しました');
+    setTimeout(loadSessionStatus, 500);
+  } catch(e) { toast('通信エラー'); }
+}
+
+async function loadPendingApprovals() {
+  try {
+    const r = await fetch('/api/pending-approvals');
+    if (!r.ok) return;
+    const d = await r.json();
+    const card = document.getElementById('pending-approvals-card');
+    const list = document.getElementById('pending-list');
+    const cnt = document.getElementById('pending-count');
+    if (!d.items || d.items.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+    cnt.textContent = d.count;
+    list.innerHTML = d.items.map(item => `
+      <div style="border-top:1px solid #F0F0F0;padding:10px 0">
+        <div style="font-size:12px;color:#FF3B30;font-weight:600;margin-bottom:4px">Level2 — ${item.reason||'承認が必要'}</div>
+        <div style="font-size:13px;color:#1A1A1A;margin-bottom:8px;line-height:1.5">${escHtml(item.instruction||'').slice(0,120)}</div>
+        <div style="font-size:11px;color:#9B9B9B;margin-bottom:8px">${item.timestamp||''}</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" style="font-size:12px" onclick="approveItem('${item.id}')">承認して実行</button>
+          <button class="btn" style="font-size:12px;color:#FF3B30" onclick="rejectItem('${item.id}')">却下</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function approveItem(id) {
+  try {
+    const r = await fetch('/api/approve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('承認しました — 実行開始');
+      loadPendingApprovals();
+      startReplyPoller(0, 'reply-card', 'reply-text');
+    } else {
+      toast('エラー: ' + (d.error || '不明'));
+    }
+  } catch(e) { toast('通信エラー'); }
+}
+
+async function rejectItem(id) {
+  try {
+    const r = await fetch('/api/reject', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('却下しました');
+      loadPendingApprovals();
+    }
+  } catch(e) { toast('通信エラー'); }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ==================== 国会タブ ====================
+function genBillId() {
+  S.billCounter++;
+  localStorage.setItem('billCounter', String(S.billCounter));
+  const now = new Date();
+  const y = now.getFullYear();
+  const md = String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  return `BILL-${y}-${md}-${String(S.billCounter).padStart(3,'0')}`;
+}
+
+async function submitBill(fromAdvisory=null) {
+  const input = document.getElementById('bill-input');
+  const bill = input.value.trim();
+  if(!bill) { toast('変更内容を入力してください'); return; }
+  const btn = document.getElementById('bill-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>審議中';
+  const billId = genBillId();
+  S.pendingBill = {
+    bill_id: billId,
+    title: bill.slice(0,50),
+    text: bill,
+    status: 'pending',
+    submitted_at: new Date().toISOString(),
+    decided_at: null,
+    origin: fromAdvisory ? 'advisory' : 'manual',
+    advisory_id: fromAdvisory || null,
+  };
+  document.getElementById('bill-id-label').textContent = billId + (fromAdvisory ? ' ★参謀' : '');
+  const instruction = `【法案審議依頼】${billId}\n${bill}\n\n上記について以下を分析してください:\n① 具体的な実装方針\n② 影響を受けるシステム・ファイル一覧\n③ リスクと副作用\n④ 工数見積もり（番の1日2-3時間前提）\n⑤ 承認すべきか否かの推奨`;
+  try {
+    const r = await fetch('/api/instruct', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({instruction})
+    });
+    const d = await r.json();
+    if(d.ok) {
+      logAction('submit_bill', { bill_id: billId, origin: S.pendingBill.origin });
+      document.getElementById('bill-result-card').style.display = 'block';
+      const autoMsg = d.auto_review
+        ? `【自動審査開始】${d.bill_id || billId}\n\nClaude が自動審査を実行中です。完了次第ここに結果が表示されます…`
+        : '分析中… Claude Codeの返答をお待ちください。';
+      document.getElementById('bill-result-text').textContent = autoMsg;
+      toast(d.auto_review ? '自動審査を開始しました' : '審議を提出しました');
+      startReplyPoller(0, 'bill-result-card', 'bill-result-text');
+    } else {
+      toast('エラー: ' + (d.error||'不明'));
+    }
+  } catch(e) { toast('送信エラー'); }
+  btn.disabled = false;
+  btn.innerHTML = '審議に提出';
+}
+
+function quickBill(instruction) {
+  document.getElementById('bill-input').value = instruction;
+  submitBill();
+}
+
+async function checkConstitution() {
+  const instruction = '現在のシステム構成が以下の3原則に違反していないか確認してください:\n第1条 セキュリティ最優先\n第2条 全履歴を詳細に残す\n第3条 コスト最小化（ステージゲート方式）';
+  try {
+    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const d = await r.json();
+    if(d.ok) { logAction('check_constitution'); toast('違憲審査を依頼しました'); }
+  } catch(e) { toast('送信エラー'); }
+}
+
+function decideBill(status) {
+  if(!S.pendingBill) { toast('審議中の法案がありません'); return; }
+  const labels = {passed:'可決', rejected:'否決', hold:'保留'};
+  const bill = { ...S.pendingBill, status, decided_at: new Date().toISOString() };
+  S.billHistory.unshift(bill);
+  localStorage.setItem('billHistory', JSON.stringify(S.billHistory.slice(0,50)));
+  logAction('decide_bill', { bill_id: bill.bill_id, status, origin: bill.origin });
+  S.pendingBill = null;
+  document.getElementById('bill-result-card').style.display = 'none';
+  document.getElementById('bill-input').value = '';
+  renderBillHistory();
+  toast(`${labels[status]}しました`);
+}
+
+function renderBillHistory() {
+  const el = document.getElementById('bill-history');
+  if(!S.billHistory.length) { el.innerHTML = '<div class="empty">議決履歴なし</div>'; return; }
+  const labels = {passed:'可決', rejected:'否決', hold:'保留', pending:'審議中'};
+  el.innerHTML = S.billHistory.slice(0,15).map(b => `
+    <div class="bill-item ${esc(b.status)}">
+      <div class="bill-title">
+        ${b.origin==='advisory' ? '<span title="参謀からの提案">★</span> ' : ''}${esc(b.title)}
+      </div>
+      <div class="bill-meta">
+        ${labels[b.status]||b.status}
+        · ${fmtDate(b.decided_at||b.submitted_at)}
+        · <span style="font-size:10px;font-family:monospace">${esc(b.bill_id||'')}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ==================== 進捗タブ ====================
+const PROJECTS_FALLBACK = [
+  { name:'O-TN-SUN Windows移行', badge:'Phase A', badgeClass:'badge-pending', pct:40, color:'#7C3AED', desc:'CC native化 / Kaizen / WSL整理' },
+  { name:'バスケ予約PWA',          badge:'4/20締切', badgeClass:'badge-deadline', pct:75, color:'#1D9E75', desc:'Phase 7A完了・API調査済' },
+  { name:'SRROE v4A フォワードテスト', badge:'7月評価', badgeClass:'badge-pending', pct:5,  color:'#2563EB', desc:'4月〜7月（3ヶ月評価）', note:'合格基準: PF≥1.2 / 勝率≥60% / DD≤15%' },
+  { name:'Market Voice / TTS',    badge:'完了',     badgeClass:'badge-passed',   pct:100, color:'#1D9E75', desc:'Windows移行完了' },
+  { name:'CivRebuild',            badge:'待機中',   badgeClass:'badge-neutral',  pct:0,   color:'#B4B2A9', desc:'Phase 2残2タスク' },
+];
+
+async function loadProgress() {
+  try {
+    const r = await fetch('/api/progress');
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    renderProgress(d.projects || PROJECTS_FALLBACK);
+    if(d.pending_tasks) renderPendingTasks(d.pending_tasks);
+    else loadPendingTasks();
+  } catch(e) {
+    renderProgress(PROJECTS_FALLBACK);
+    loadPendingTasks();
+  }
+}
+
+function renderProgress(projects) {
+  document.getElementById('progress-list').innerHTML = projects.map((p,i) => `
+    <div style="margin-bottom:${i===projects.length-1?'0':'14px'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600">${esc(p.name)}</span>
+        <span class="badge ${esc(p.badgeClass||'badge-neutral')}">${esc(p.badge||'')}</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>${esc(p.desc||'')}</span><span>${p.pct}%</span></div>
+        <div class="progress-track"><div class="progress-bar" style="width:${p.pct}%;background:${esc(p.color||'#B4B2A9')}"></div></div>
+      </div>
+      ${p.note ? `<div style="font-size:11px;color:#6B6B6B;margin-top:4px">${esc(p.note)}</div>` : ''}
+    </div>`).join('');
+}
+
+async function loadPendingTasks() {
+  try {
+    const r = await fetch('/api/pending-tasks');
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    renderPendingTasks(d.tasks || []);
+  } catch(e) {
+    document.getElementById('pending-task-list').innerHTML = '<div class="empty">APIに接続できません</div>';
+  }
+}
+
+function renderPendingTasks(tasks) {
+  const el = document.getElementById('pending-task-list');
+  if(!tasks.length) { el.innerHTML = '<div class="empty">残タスクなし</div>'; return; }
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = tasks.slice(0,20).map(t => {
+    const overdue = t.due && t.due < today;
+    const dotCls = overdue ? 'dot-red' : t.priority==='high' ? 'dot-yellow' : 'dot-gray';
+    const metaParts = [];
+    if(t.project) metaParts.push(esc(t.project));
+    if(t.due)     metaParts.push(`期限: ${esc(t.due)}${overdue?' ⚠️':''}`);
+    return `
+    <div class="task-item">
+      <span class="dot ${dotCls}" style="margin-top:5px;flex-shrink:0"></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px">${esc(t.title||String(t))}</div>
+        ${metaParts.length ? `<div style="font-size:11px;color:#9B9B9B;margin-top:1px">${metaParts.join(' · ')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function requestRoadmap() {
+  quickAction('全プロジェクトのロードマップを時系列で生成してください（O-TN-SUN / バスケPWA / SRROE / Market Voice / CivRebuild）');
+  switchTab(0);
+  logAction('request_roadmap');
+}
+
+// ==================== 受信箱タブ ====================
+async function loadReports() {
+  try {
+    const r = await fetch('/api/exec-history');
+    const d = await r.json();
+    S.reports = (d.history||[]).map((h,i) => {
+      const detailParts = [];
+      if(h.instruction) detailParts.push(`【指示内容】\n${h.instruction}`);
+      if(h.result_summary) detailParts.push(`【実行結果】\n${h.result_summary}`);
+      if(h.status) detailParts.push(`【ステータス】${h.status}`);
+      if(h.duration_ms) detailParts.push(`【実行時間】${h.duration_ms}ms`);
+      if(h.result) detailParts.push(`【結果】\n${h.result}`);
+      if(h.message && !h.instruction) detailParts.push(h.message);
+      const summary = detailParts.join('\n\n') || h.message || '詳細なし';
+      return {
+        id: i,
+        type: h.type||'kaizen',
+        title: h.title || (h.instruction||'').slice(0,40) || '実行ログ',
+        summary,
+        read: false,
+        created_at: h.timestamp || h.created_at || new Date().toISOString(),
+        frequency: h.frequency || 'one-time',
+        advisory_id: h.advisory_id || null,
+        priority: h.priority || null,
+      };
+    });
+    // advisory_queue も統合
+    try {
+      const ra = await fetch('/api/advisory-queue');
+      const da = await ra.json();
+      const advReports = (da.queue||[]).map((a,i) => ({
+        id: 1000+i,
+        type: 'advisory',
+        title: a.title,
+        summary: a.summary,
+        read: false,
+        created_at: a.created_at,
+        advisory_id: a.advisory_id,
+        priority: a.priority,
+      }));
+      S.reports = [...advReports, ...S.reports];
+    } catch(e) {}
+    renderReports();
+  } catch(e) {
+    S.reports = [
+      {id:0,type:'migration',title:'Market Voice 移行完了',summary:'Windows移行完了。サーバー.py 3箇所修正、パス定義.py更新。',read:false,created_at:new Date().toISOString()},
+      {id:1,type:'trade',title:'SRROE v4A 日報',summary:'フォワードテスト開始。USDJPY H1監視中。',read:true,created_at:new Date(Date.now()-86400000).toISOString()},
+    ];
+    renderReports();
+  }
+}
+
+function filterReports(filter, btn) {
+  S.reportFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    if(b.closest('#tab-3')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  renderReports();
+}
+
+const TYPE_ICONS = {migration:'📦', audit:'🔍', trade:'📈', scan:'🔎', error:'⚠️', kaizen:'🔄', gazette:'📰', advisory:'★'};
+
+function renderReports() {
+  const el = document.getElementById('report-list');
+  let list = S.reports;
+  if(S.reportFilter==='unread')   list = list.filter(r => !r.read);
+  if(S.reportFilter==='error')    list = list.filter(r => r.type==='error');
+  if(S.reportFilter==='advisory') list = list.filter(r => r.type==='advisory');
+  if(!list.length) { el.innerHTML = '<div class="empty">レポートなし</div>'; return; }
+  el.innerHTML = list.map(r => {
+    const isAdvisory = r.type==='advisory';
+    const priorityColor = r.priority==='high'?'#DC2626':r.priority==='medium'?'#D97706':'';
+    return `
+    <div class="report-item" onclick="${isAdvisory ? `openAdvisoryFromReport('${esc(r.advisory_id||'')}')` : `openReport(${r.id})`}">
+      <div class="report-dot"><span class="dot ${r.read?'dot-gray':'dot-green'}"></span></div>
+      <div class="report-body">
+        <div class="report-title" style="${priorityColor?'color:'+priorityColor:''}">
+          ${TYPE_ICONS[r.type]||'📄'} ${esc(r.title)}
+        </div>
+        <div class="report-meta">${fmtDate(r.created_at)}${isAdvisory?' · 参謀タブで詳細':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openReport(id) {
+  const r = S.reports.find(x => x.id===id);
+  if(!r) return;
+  r.read = true;
+  renderReports();
+  openModal(r.title, r.summary||'詳細なし');
+  logAction('open_report', { title: r.title });
+}
+
+function openAdvisoryFromReport(advisoryId) {
+  switchTab(4);
+  logAction('open_advisory_from_report', { advisory_id: advisoryId });
+}
+
+// ==================== 参謀タブ ====================
+async function loadSansho() {
+  await Promise.all([
+    loadMonitorCards(),
+    loadAdvisoryQueue(),
+    loadSchedule(),
+  ]);
+}
+
+// --- 監視ダッシュボード ---
+async function loadMonitorCards() {
+  try {
+    const r = await fetch('/api/monitor');
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    renderMonitorCards(d.cards || []);
+  } catch(e) {
+    renderMonitorCards(MONITOR_FALLBACK);
+  }
+}
+
+const MONITOR_FALLBACK = [
+  {
+    id:'srroe', title:'SRROE v4A フォワード成績',
+    kpis:[
+      {label:'PF（全期間）', value:'—', alert:false},
+      {label:'勝率', value:'—', alert:false},
+      {label:'最大DD', value:'—', alert:false},
+      {label:'直近7日PF', value:'—', alert:false},
+    ],
+    actions:['詳細','戦略切替判定'],
+  },
+  {
+    id:'tts', title:'TTS音声品質',
+    kpis:[
+      {label:'辞書エントリ', value:'—', alert:false},
+      {label:'直近エラー率', value:'—', alert:false},
+    ],
+    actions:['詳細','精度チェック実行'],
+  },
+  {
+    id:'system', title:'システム健全性',
+    kpis:[
+      {label:'brain.py', value:'—', alert:false},
+      {label:'監視.py', value:'—', alert:false},
+      {label:'Kaizen未実行', value:'—', alert:false},
+    ],
+    actions:['詳細','Kaizenスキャン実行'],
+  },
+  {
+    id:'basket', title:'バスケPWA',
+    kpis:[
+      {label:'キャンセル枠検出', value:'—', alert:false},
+      {label:'締切', value:'4/20抽選 / 4/23申請', alert:true},
+    ],
+    actions:['詳細'],
+  },
+];
+
+function renderMonitorCards(cards) {
+  document.getElementById('monitor-cards').innerHTML = cards.map(c => `
+    <div class="monitor-card ${c.kpis.some(k=>k.alert)?'alert':''}">
+      <div class="monitor-card-header">
+        <div class="monitor-card-title">${esc(c.title)}</div>
+      </div>
+      ${c.kpis.map(k => `
+        <div class="monitor-kpi">
+          ${esc(k.label)}: <span class="${k.alert?'alert-val':''}">${esc(String(k.value))}</span>
+        </div>`).join('')}
+      <div class="btn-row" style="margin-top:8px">
+        ${(c.actions||[]).map(a => `
+          <button class="btn" style="font-size:11px;padding:5px 10px" onclick="monitorAction('${esc(c.id)}','${esc(a)}')">${esc(a)}</button>
+        `).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function monitorAction(cardId, action) {
+  const queries = {
+    '詳細': `${cardId}の詳細を確認してください`,
+    '戦略切替判定': 'SRROE v4Aの戦略切替が必要か判定してください',
+    '精度チェック実行': 'TTS音声品質の精度チェックを実行してください',
+    'Kaizenスキャン実行': 'システム全体のKaizenスキャンを実行してください',
+  };
+  const q = queries[action] || `${cardId}: ${action}を実行してください`;
+  quickAction(q);
+  switchTab(0);
+  logAction('monitor_action', { card: cardId, action });
+}
+
+// --- 提案キュー ---
+async function loadAdvisoryQueue() {
+  try {
+    const r = await fetch('/api/advisory-queue');
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    S.advisory = d.queue || [];
+    renderAdvisoryQueue();
+    updateSanshoTabBadge();
+  } catch(e) {
+    S.advisory = ADVISORY_FALLBACK;
+    renderAdvisoryQueue();
+    updateSanshoTabBadge();
+  }
+}
+
+const ADVISORY_FALLBACK = [
+  {
+    advisory_id:'ADV-DEMO-001',
+    category:'trade', priority:'high',
+    title:'SRROE v4A: RR比の再検討を推奨',
+    summary:'直近7日のPFが0.87に低下。ATR×1.0/RR1.0の現設定では小幅逆行で連敗しやすい相場環境の可能性。',
+    detail_analysis:'（詳細分析はtrade_monitorが接続されると自動更新されます）',
+    recommended_action:'RR比を1.0→1.3に変更するか、CandleVerbalizerへの切替を検討。',
+    status:'pending',
+    created_at: new Date().toISOString(),
+    auto_generated: false,
+  },
+];
+
+function filterAdvisory(filter, btn) {
+  S.advisoryFilter = filter;
+  document.querySelectorAll('#tab-4 .filter-row .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdvisoryQueue();
+}
+
+function renderAdvisoryQueue() {
+  const el = document.getElementById('advisory-queue');
+  let list = S.advisory.filter(a => a.status==='pending');
+  if(S.advisoryFilter==='high')   list = list.filter(a => a.priority==='high');
+  if(S.advisoryFilter==='trade')  list = list.filter(a => a.category==='trade');
+  if(S.advisoryFilter==='system') list = list.filter(a => a.category==='system');
+  if(!list.length) {
+    el.innerHTML = '<div class="card"><div class="empty">提案なし</div></div>';
+    return;
+  }
+  el.innerHTML = list.map(a => `
+    <div class="advisory-card" id="adv-${esc(a.advisory_id)}">
+      <div class="advisory-card-header">
+        <span class="advisory-priority ${esc(a.priority)}">${
+          a.priority==='high'?'★高':a.priority==='medium'?'◆中':'▽低'
+        }</span>
+        <span class="advisory-category">${esc(a.category)}</span>
+        <span class="advisory-date">${fmtDate(a.created_at)}</span>
+      </div>
+      <div class="advisory-title">${esc(a.title)}</div>
+      <div class="advisory-summary">${esc(a.summary)}</div>
+      <div class="advisory-detail" id="detail-${esc(a.advisory_id)}">${esc(a.detail_analysis||'')}\n\n推奨アクション: ${esc(a.recommended_action||'')}</div>
+      <div class="btn-row">
+        <button class="btn" style="font-size:11px;padding:5px 10px" onclick="toggleAdvisoryDetail('${esc(a.advisory_id)}',this)">詳細分析を見る</button>
+        <button class="btn btn-warning" style="font-size:11px;padding:5px 10px" onclick="submitAdvisoryToKokkai('${esc(a.advisory_id)}')">国会に提出</button>
+        <button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="dismissAdvisory('${esc(a.advisory_id)}')">却下</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleAdvisoryDetail(id, btn) {
+  const el = document.getElementById(`detail-${id}`);
+  if(!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '詳細分析を見る' : '詳細を閉じる';
+  logAction('toggle_advisory_detail', { advisory_id: id });
+}
+
+function submitAdvisoryToKokkai(advisoryId) {
+  const a = S.advisory.find(x => x.advisory_id===advisoryId);
+  if(!a) return;
+  const billText = `【参謀提案 ${advisoryId}】\n${a.title}\n\n概要:\n${a.summary}\n\n推奨アクション:\n${a.recommended_action||''}`;
+  document.getElementById('bill-input').value = billText;
+  switchTab(1);
+  logAction('submit_advisory_to_kokkai', { advisory_id: advisoryId });
+  // 国会に移動後、submitBillをadvisory元で呼ぶ
+  setTimeout(() => submitBill(advisoryId), 300);
+}
+
+async function dismissAdvisory(advisoryId) {
+  const reason = prompt('却下理由を入力してください（学習データとして保存されます）:');
+  if(reason === null) return; // キャンセル
+  const idx = S.advisory.findIndex(a => a.advisory_id===advisoryId);
+  if(idx>=0) S.advisory[idx].status = 'dismissed';
+  try {
+    await fetch(`/api/advisory/${encodeURIComponent(advisoryId)}/dismiss`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ reason })
+    });
+  } catch(e) {}
+  logAction('dismiss_advisory', { advisory_id: advisoryId, reason });
+  renderAdvisoryQueue();
+  updateSanshoTabBadge();
+  toast('却下しました');
+}
+
+function updateSanshoTabBadge() {
+  const pending = S.advisory.filter(a => a.status==='pending').length;
+  const btn = document.getElementById('tab-sansho-btn');
+  const existing = btn.querySelector('.tab-badge');
+  if(pending > 0) {
+    if(existing) existing.textContent = pending;
+    else {
+      const badge = document.createElement('span');
+      badge.className = 'tab-badge';
+      badge.textContent = pending;
+      btn.appendChild(badge);
+    }
+  } else {
+    if(existing) existing.remove();
+  }
+}
+
+// --- 自律スケジュール ---
+async function loadSchedule() {
+  try {
+    const r = await fetch('/api/advisory-schedule');
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    S.schedule = d.jobs || [];
+    renderSchedule();
+  } catch(e) {
+    S.schedule = SCHEDULE_FALLBACK;
+    renderSchedule();
+  }
+}
+
+const SCHEDULE_FALLBACK = [
+  {job_id:'srroe-daily', name:'SRROE 日次集計', description:'デモ口座トレード結果集計・KPI算出', schedule:'毎日 8:00', enabled:true, last_run:null, last_result:null, next_run:null},
+  {job_id:'tts-quality', name:'TTS精度チェック', description:'辞書未検証語・エラー率チェック', schedule:'毎週月曜 9:00', enabled:true, last_run:null, last_result:null, next_run:null},
+  {job_id:'kaizen-scan', name:'全体Kaizenスキャン', description:'全システム横断の改善余地探索', schedule:'毎週日曜 10:00', enabled:true, last_run:null, last_result:null, next_run:null},
+  {job_id:'weekly-audit', name:'週次監査', description:'audit_project_master.py実行', schedule:'毎週月曜 0:00', enabled:true, last_run:null, last_result:null, next_run:null},
+  {job_id:'basket-poll', name:'バスケ枠ポーリング', description:'キャンセル枠自動検出', schedule:'毎日 9:30〜', enabled:true, last_run:null, last_result:null, next_run:null},
+  {job_id:'design-scan', name:'デザイン改善スキャン', description:'UI/UX改善余地の自動探索', schedule:'毎月1日 10:00', enabled:false, last_run:null, last_result:null, next_run:null},
+];
+
+function renderSchedule() {
+  const el = document.getElementById('schedule-list');
+  el.innerHTML = S.schedule.map(job => `
+    <div class="schedule-item">
+      <div class="schedule-info">
+        <div class="schedule-name">${esc(job.name)}</div>
+        <div class="schedule-meta">${esc(job.schedule)} · ${job.last_result ? esc(job.last_result) : '未実行'}</div>
+      </div>
+      <div class="schedule-actions">
+        <button class="btn" style="font-size:11px;padding:4px 8px" onclick="runJobNow('${esc(job.job_id)}')">実行</button>
+        <label class="toggle">
+          <input type="checkbox" ${job.enabled?'checked':''} onchange="toggleJob('${esc(job.job_id)}',this.checked)">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleJob(jobId, enabled) {
+  try {
+    await fetch(`/api/advisory-schedule/${encodeURIComponent(jobId)}/toggle`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ enabled })
+    });
+  } catch(e) {}
+  const job = S.schedule.find(j => j.job_id===jobId);
+  if(job) job.enabled = enabled;
+  logAction('toggle_job', { job_id: jobId, enabled });
+  toast(`${enabled?'有効':'無効'}にしました`);
+}
+
+async function runJobNow(jobId) {
+  const job = S.schedule.find(j => j.job_id===jobId);
+  toast(`${job?.name||jobId} を実行中…`, 4000);
+  try {
+    await fetch(`/api/advisory-schedule/${encodeURIComponent(jobId)}/run`, { method:'POST' });
+    logAction('run_job', { job_id: jobId });
+    toast(`${job?.name||jobId} を実行しました`);
+    setTimeout(() => loadSchedule(), 2000);
+  } catch(e) { toast('実行エラー'); }
+}
+
+// ==================== 学習タブ ====================
+async function generateReview() {
+  const instruction = '今日の活動を振り返り、学習教材（話し言葉、NHK教育トーン）として音声原稿を生成してください。Market Voice（メイ）が読み上げる形式で。SSML対応。';
+  document.getElementById('review-status').textContent = '生成依頼中…';
+  try {
+    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const d = await r.json();
+    if(d.ok) {
+      logAction('generate_review');
+      document.getElementById('review-status').textContent = '依頼しました。生成完了後に音声教材アーカイブへ追加されます。';
+      toast('振り返り音声を依頼しました');
+    }
+  } catch(e) { toast('エラー'); }
+}
+
+async function generateReport(type) {
+  const labels = {morning:'朝', evening:'夕'};
+  const instruction = `${labels[type]}レポートを生成してください。Market Voice（メイ）が読み上げる形式で、今日の主要なシステム状態・タスク状況を含めてください。`;
+  try {
+    const r = await fetch('/api/instruct', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({instruction})});
+    const d = await r.json();
+    if(d.ok) { logAction('generate_report', {type}); toast(`${labels[type]}レポートを依頼しました`); }
+  } catch(e) { toast('エラー'); }
+}
+
+async function loadTtsDict() {
+  try {
+    const r = await fetch('/api/tts-dictionary');
+    const d = await r.json();
+    const entries = d.entries || (Array.isArray(d) ? d : []);
+    document.getElementById('tts-count').textContent = entries.length;
+    document.getElementById('tts-preview').textContent =
+      entries.slice(0,8).map(e => `${e.word||e.text||''} → ${e.reading||e.phoneme||''}`).join('\n');
+  } catch(e) {
+    document.getElementById('tts-count').textContent = '—';
+  }
+}
+
+async function addTtsEntry() {
+  const word    = document.getElementById('tts-word').value.trim();
+  const reading = document.getElementById('tts-reading').value.trim();
+  if(!word || !reading) { toast('単語と読みを入力してください'); return; }
+  try {
+    const r = await fetch('/api/tts-dictionary', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ word, reading })
+    });
+    const d = await r.json();
+    if(d.ok) {
+      logAction('add_tts_entry', { word });
+      toast(`「${word}」を追加しました`);
+      document.getElementById('tts-word').value = '';
+      document.getElementById('tts-reading').value = '';
+      loadTtsDict();
+    } else {
+      toast('追加エラー: ' + (d.error||'不明'));
+    }
+  } catch(e) { toast('追加エラー'); }
+}
+
+async function loadAudioArchive() {
+  const el = document.getElementById('audio-archive');
+  try {
+    const r = await fetch('/api/voice-library');
+    const d = await r.json();
+    // サーバーはフラットな items[] を返す → カテゴリ別にグループ化
+    const flatItems = d.items || [];
+    if(!flatItems.length) { el.innerHTML = '<div class="empty">音声教材なし</div>'; return; }
+
+    // date フィールド（YYYY-MM-DDT...）から月キーを抽出して月別グループ化
+    const catMap = new Map();
+    flatItems.forEach(item => {
+      const m = (item.date || '').match(/^(\d{4})-(\d{2})/);
+      const key = m ? `${m[1]}-${m[2]}` : 'unknown';
+      const name = m ? `${parseInt(m[1])}年${parseInt(m[2])}月` : '日付不明';
+      if(!catMap.has(key)) catMap.set(key, { id: key, name, items: [] });
+      catMap.get(key).items.push(item);
+    });
+    // 新しい月を先に
+    const sorted = new Map([...catMap.entries()].sort((a, b) => b[0].localeCompare(a[0])));
+    catMap.clear();
+    sorted.forEach((v, k) => catMap.set(k, v));
+
+    // 全アイテムの通し番号（_audioItemHtml用）
+    let globalIdx = 0;
+    let html = '';
+    let ci = 0;
+    catMap.forEach(cat => {
+      const open = ci === 0;
+      const catId = 'cat-' + cat.id;
+      const itemsHtml = cat.items.map(item => _audioItemHtml(item, globalIdx++)).join('');
+      html += `
+        <div class="month-group">
+          <div class="month-header" onclick="toggleMonth('${catId}')">
+            <span class="month-label">${esc(cat.name)}</span>
+            <span class="month-count">${cat.items.length}件</span>
+            <span class="month-arrow" id="arrow-${catId}">${open ? '▼' : '▶'}</span>
+          </div>
+          <div class="month-body" id="month-${catId}" ${open ? '' : 'style="display:none"'}>
+            ${itemsHtml}
+          </div>
+        </div>`;
+      ci++;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">取得エラー</div>';
+  }
+}
+
+function toggleMonth(ym) {
+  const body = document.getElementById(`month-${ym}`);
+  const arrow = document.getElementById(`arrow-${ym}`);
+  if(!body) return;
+  const opening = body.style.display === 'none';
+  body.style.display = opening ? 'block' : 'none';
+  if(arrow) arrow.textContent = opening ? '▼' : '▶';
+}
+
+function _audioItemHtml(item, i) {
+  const url = item.url || '';
+  const badge = item.category_name ? `<span class="cat-badge">${esc(item.category_name)}</span>` : '';
+  const desc = item.description ? `<div class="audio-desc">${esc(item.description)}</div>` : '';
+  const dur = item.duration_min ? ` · ${item.duration_min}分` : '';
+  return `
+    <div class="audio-item" id="audio-item-${i}">
+      <div class="audio-row">
+        <div class="audio-info">
+          ${badge}
+          <div class="audio-title">${esc(item.title || item.filename || '教材')}</div>
+          ${desc}
+          <div class="audio-meta">${fmtDate(item.date || '')}${dur}</div>
+        </div>
+        ${url ? `<button class="btn" style="flex-shrink:0" onclick="toggleAudioPlayer(${i})">▶</button>` : ''}
+      </div>
+      <div class="audio-player" id="player-${i}" style="display:none">
+        ${url ? `<audio controls src="${esc(url)}" preload="none" style="width:100%;height:36px"></audio>` : ''}
+      </div>
+    </div>`;
+}
+
+function toggleAudioPlayer(i) {
+  const player = document.getElementById(`player-${i}`);
+  if(!player) return;
+  const opening = player.style.display === 'none';
+  player.style.display = opening ? 'block' : 'none';
+  if(opening) logAction('play_audio', {index: i});
+}
+
+function showAudioText(i, text) {
+  const title = document.querySelector(`#audio-item-${i} .audio-title`)?.textContent || 'テキスト版';
+  openModal(title, text || '（テキストなし）');
+}
+
+// ==================== 規約タブ ====================
+async function loadRegulationTab() {
+  await Promise.all([_loadClaudeMd(), _loadKnowledgeBase()]);
+}
+
+async function _loadClaudeMd() {
+  const el = document.getElementById('claude-md-text');
+  if(!el) return;
+  try {
+    const r = await fetch('/api/claude-md');
+    const d = await r.json();
+    el.textContent = d.content || '（内容なし）';
+  } catch(e) {
+    el.textContent = 'データ取得に失敗しました。再試行してください。';
+  }
+}
+
+async function _loadKnowledgeBase() {
+  const listEl = document.getElementById('knowledge-base-list');
+  const countEl = document.getElementById('kb-count');
+  if(!listEl) return;
+  try {
+    const r = await fetch('/api/knowledge-base');
+    const d = await r.json();
+    const entries = d.entries || [];
+    if(countEl) countEl.textContent = `（${entries.length}件）`;
+    if(!entries.length) {
+      listEl.innerHTML = '<div style="color:#888;padding:8px 0">まだエントリがありません</div>';
+      return;
+    }
+    const cats = {};
+    entries.forEach(e => {
+      const cat = e.category || '未分類';
+      if(!cats[cat]) cats[cat] = [];
+      cats[cat].push(e);
+    });
+    let html = '';
+    for(const [cat, items] of Object.entries(cats)) {
+      html += `<div style="font-size:11px;font-weight:600;color:#888;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.5px">${cat}（${items.length}）</div>`;
+      items.forEach(e => {
+        const status = e.status ? ` <span style="font-size:10px;color:${e.status==='resolved'?'#1D9E75':'#E74C3C'}">[${e.status}]</span>` : '';
+        const summary = e.summary ? `<div style="font-size:11px;color:#666;margin-top:2px;white-space:normal">${e.summary}</div>` : '';
+        html += `<div style="border-bottom:1px solid #f0f0f0;padding:6px 0">
+          <div style="font-size:12px;font-weight:500">${e.title}${status}</div>
+          ${summary}
+        </div>`;
+      });
+    }
+    listEl.innerHTML = html;
+  } catch(e) {
+    listEl.textContent = 'データ取得に失敗しました。再試行してください。';
+  }
+  logAction('view_knowledge_base');
+}
+
+async function refreshClaudeMd() {
+  document.getElementById('claude-md-text').textContent = '読み込み中…';
+  await _loadClaudeMd();
+  logAction('refresh_claude_md');
+}
+
+async function refreshKnowledgeBase() {
+  document.getElementById('knowledge-base-list').textContent = '読み込み中…';
+  await _loadKnowledgeBase();
+}
+
+async function loadKaizenProtocol() {
+  const el = document.getElementById('rule-detail-card');
+  document.getElementById('rule-detail-title').textContent = 'Kaizenプロトコル';
+  document.getElementById('rule-detail-text').textContent = '読み込み中…';
+  el.style.display = 'block';
+  try {
+    const r = await fetch('/api/kaizen-protocol');
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    document.getElementById('rule-detail-text').textContent = d.content || '（内容なし）';
+  } catch(e) {
+    document.getElementById('rule-detail-text').textContent = 'データ取得に失敗しました。再試行してください。';
+  }
+  el.scrollIntoView({ behavior:'smooth' });
+  logAction('view_kaizen_protocol');
+}
+
+async function showClaudeMd() {
+  if(S.activeTab !== 6) switchTab(6);
+  document.getElementById('claude-md-card').scrollIntoView({ behavior:'smooth' });
+  logAction('view_claude_md');
+}
+
+async function showKnowledgeBase() {
+  if(S.activeTab !== 6) switchTab(6);
+  document.getElementById('knowledge-base-card').scrollIntoView({ behavior:'smooth' });
+  logAction('view_knowledge_base');
+}
+
+// ==================== メニュー ====================
+function toggleMenu() {
+  document.getElementById('menu-dropdown').classList.toggle('open');
+}
+function closeMenu() {
+  document.getElementById('menu-dropdown').classList.remove('open');
+}
+function showVersionInfo() {
+  openModal('バージョン情報',
+    'コマンドセンター v2.0\nBIGBAN guild production\nビルド: 2026-04-07\n\n' +
+    '実装済み API（全20本）:\n' +
+    '  POST /api/instruct\n  GET  /api/reply\n  GET  /api/status\n' +
+    '  GET  /api/exec-history\n  GET  /api/tts-dictionary\n  POST /api/tts-dictionary\n' +
+    '  GET  /api/voice-library\n  GET  /api/claude-md\n  POST /api/log\n' +
+    '  GET  /api/advisory-queue\n  GET  /api/advisory-schedule\n' +
+    '  POST /api/advisory/{id}/dismiss\n  POST /api/advisory-schedule/{id}/toggle\n' +
+    '  POST /api/advisory-schedule/{id}/run\n  GET  /api/monitor\n' +
+    '  GET  /api/progress\n  GET  /api/pending-tasks\n  GET  /api/kaizen-protocol\n' +
+    '  GET  /api/knowledge-base\n  GET  /audio/{path}'
+  );
+}
+function confirmClearCache() {
+  if(confirm('ローカルキャッシュをクリアしますか？\n（議決履歴・法案カウンターが削除されます）')) {
+    localStorage.clear();
+    toast('キャッシュをクリアしました');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+// ==================== モーダル ====================
+function openModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function closeModalOutside(e) {
+  if(e.target===document.getElementById('modal-overlay')) closeModal();
+}
+
+// ==================== ユーティリティ ====================
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if(!iso) return '';
+  try {
+    const d = new Date(iso), diff = Date.now()-d;
+    if(diff<60000)    return 'たった今';
+    if(diff<3600000)  return `${Math.floor(diff/60000)}分前`;
+    if(diff<86400000) return `${Math.floor(diff/3600000)}時間前`;
+    return d.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+  } catch(e) { return String(iso); }
+}
+
+// ==================== 初期化 ====================
+document.addEventListener('DOMContentLoaded', () => {
+  loadStatus();
+  loadSessionStatus();
+  loadPendingApprovals();
+  renderBillHistory();
+
+  document.getElementById('instruction-input').addEventListener('keydown', e => {
+    if((e.metaKey||e.ctrlKey) && e.key==='Enter') sendInstruction();
+  });
+  document.addEventListener('click', e => {
+    if(!document.getElementById('menu-wrap').contains(e.target)) closeMenu();
+  });
+
+  logAction('app_init');
+});
+
+setInterval(() => { if(S.activeTab===0) loadStatus(); }, 60000);
+// セッション状態: 5秒ごと、承認待ち: 10秒ごとにポーリング
+setInterval(() => { if(S.activeTab===0) loadSessionStatus(); }, 5000);
+setInterval(() => { if(S.activeTab===0) loadPendingApprovals(); }, 10000);
+</script>
+</body>
+</html>

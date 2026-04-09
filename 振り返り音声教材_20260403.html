@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>振り返り音声教材 4月2日〜3日</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: #222;
+  background: #fff;
+  padding: 16px 16px 120px;
+}
+h1.main-title {
+  font-size: 20px;
+  text-align: center;
+  margin: 8px 0 4px;
+  color: #1a73e8;
+}
+.meta {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.chapter-title {
+  font-size: 18px;
+  margin: 28px 0 12px;
+  color: #333;
+  border-left: 4px solid #1a73e8;
+  padding-left: 10px;
+  font-weight: bold;
+}
+.paragraph {
+  margin: 8px 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+.paragraph.highlight {
+  background: #fff9c4;
+}
+.chapter-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 8px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+.chapter-btn {
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid #1a73e8;
+  border-radius: 16px;
+  background: #fff;
+  color: #1a73e8;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+.chapter-btn.active {
+  background: #1a73e8;
+  color: #fff;
+}
+.controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border-top: 2px solid #e0e0e0;
+  z-index: 20;
+  justify-content: center;
+  align-items: center;
+}
+.controls button {
+  min-width: 72px;
+  min-height: 50px;
+  font-size: 15px;
+  font-weight: bold;
+  border: 2px solid #1a73e8;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-play { background: #1a73e8; color: #fff; flex: 2; }
+.btn-play:active { background: #1558b0; }
+.btn-pause { background: #fff; color: #1a73e8; flex: 1; }
+.btn-pause:active { background: #e8f0fe; }
+.btn-stop { background: #fff; color: #d32f2f; border-color: #d32f2f; flex: 1; }
+.btn-stop:active { background: #fde8e8; }
+.btn-skip { background: #fff; color: #1a73e8; flex: 0.7; font-size: 20px; padding: 0; }
+.speed-label {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  min-width: 48px;
+}
+.speed-select {
+  font-size: 14px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+}
+.status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px 8px;
+  z-index: 25;
+  background: #e8f0fe;
+  color: #1a73e8;
+  display: none;
+  transition: opacity 0.3s;
+}
+.status-bar.error { background: #fde8e8; color: #d32f2f; }
+.status-bar.visible { display: block; }
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #1a73e8;
+  z-index: 30;
+  transition: width 0.3s;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="status-bar" id="statusBar"></div>
+
+<h1 class="main-title">音声学習教材：4月2日〜3日の振り返り</h1>
+<p class="meta">収録日：2026年4月3日　話者：Mei　所要時間：約15分</p>
+
+<div class="chapter-nav" id="chapterNav"></div>
+
+<div id="contentArea"></div>
+
+<div class="controls">
+  <button class="btn-skip" onclick="skipPrev()" title="前へ">◀</button>
+  <button class="btn-play" id="btnPlay" onclick="startSpeech()">▶ 再生</button>
+  <button class="btn-pause" onclick="pauseSpeech()">一時停止</button>
+  <button class="btn-stop" onclick="stopSpeech()">停止</button>
+  <button class="btn-skip" onclick="skipNext()" title="次へ">▶▶</button>
+  <div class="speed-label">
+    速度
+    <select class="speed-select" id="speedSelect" onchange="changeSpeed()">
+      <option value="0.7">0.7</option>
+      <option value="0.8">0.8</option>
+      <option value="0.9" selected>0.9</option>
+      <option value="1.0">1.0</option>
+      <option value="1.2">1.2</option>
+      <option value="1.5">1.5</option>
+    </select>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   TTS辞書（英語略語 → 日本語読み）
+   speak時にのみ適用。表示テキストは原文のまま。
+   ============================================================ */
+var ttsDictionary = {
+  "SRROE": "エスアールアールオーイー",
+  "CandleVerbalizer": "キャンドルバーバライザー",
+  "v1": "バージョン1",
+  "v4A": "バージョン4エー",
+  "OHLC": "オーエイチエルシー",
+  "PF": "プロフィットファクター",
+  "DD": "ドローダウン",
+  "RR": "リスクリワード",
+  "ICT": "アイシーティー",
+  "FVG": "エフブイジー",
+  "BSL": "ビーエスエル",
+  "SSL": "エスエスエル",
+  "MSS": "エムエスエス",
+  "L1": "レイヤー1",
+  "L2": "レイヤー2",
+  "L3": "レイヤー3",
+  "MT5": "エムティーファイブ",
+  "EA": "イーエー",
+  "ATR": "エーティーアール",
+  "PWA": "ピーダブリューエー",
+  "API": "エーピーアイ",
+  "TTS": "ティーティーエス",
+  "CSV": "シーエスブイ",
+  "Flask": "フラスク",
+  "cron": "クロン",
+  "dry_run": "ドライラン",
+  "dry run": "ドライラン",
+  "harp_api.py": "ハープエーピーアイドットパイ",
+  "harp_api": "ハープエーピーアイ",
+  "harp API": "ハープエーピーアイ",
+  "home.html": "ホームドットエイチティーエムエル",
+  "O-TN-SUN": "オーティーエヌサン",
+  "BIGBAN": "ビッグバン",
+  "Cowork": "コワーク",
+  "claude.ai": "クロードエーアイ",
+  "GitHub": "ギットハブ",
+  "Power BI": "パワービーアイ",
+  "JSON": "ジェイソン",
+  "CSS": "シーエスエス",
+  "Neural2": "ニューラル2",
+  "Neural2-B": "ニューラル2ビー",
+  "0017C1": "ゼロゼロイチナナシーワン",
+  "3460FB": "サンヨンロクゼロエフビー",
+  "1.686": "イチテンロクハチロク",
+  "1.012": "イチテンゼロイチニ",
+  "1.54": "イチテンゴヨン",
+  "2.94": "ニテンキュウヨン",
+  "109.1": "ヒャクキュウテンイチ",
+  "SL": "ストップロス",
+  "TP": "テイクプロフィット",
+  ".py": "ドットパイ",
+  "Mei": "メイ",
+  "USDJPY": "ドル円",
+  "H1": "1時間足",
+  "Playwright": "プレイライト",
+  "localhost": "ローカルホスト",
+  "5100": "ゴセンヒャク",
+  "277": "ニヒャクナナジュウナナ",
+  "76,027": "ナナマンロクセンニジュウナナ",
+  "POST": "ポスト",
+  "UI": "ユーアイ"
+};
+
+/* 辞書キーを長い順にソート（部分一致の誤置換を防止） */
+var dictKeys = Object.keys(ttsDictionary).sort(function(a, b) {
+  return b.length - a.length;
+});
+
+function applyDictionary(text) {
+  var result = text;
+  for (var i = 0; i < dictKeys.length; i++) {
+    var key = dictKeys[i];
+    /* 単語境界を考慮した置換（日本語混在のため前後の文字種で判定） */
+    var escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp(escaped, 'g');
+    result = result.replace(regex, ttsDictionary[key]);
+  }
+  return result;
+}
+
+/* ============================================================
+   教材テキスト（段落配列）
+   type: "chapter" = 章タイトル, "text" = 本文段落
+   chapter: 所属する章番号（ナビゲーション用）
+   ============================================================ */
+var content = [
+  /* --- オープニング --- */
+  {type:"chapter", chapter:0, text:"オープニング"},
+  {type:"text", chapter:0, text:"番さん、おはようございます。Meiです。今日は2026年4月3日。昨日から今日にかけての活動を振り返ります。"},
+  {type:"text", chapter:0, text:"この2日間は、「新しい武器の設計」と「既存システムの修復」が並行して進んだ、密度の高い期間でした。一つずつ整理していきます。"},
+
+  /* --- 第1章 --- */
+  {type:"chapter", chapter:1, text:"第1章：ローソク足言語化、CandleVerbalizerの誕生"},
+  {type:"text", chapter:1, text:"4月2日、SRROEに続く新しいEA構想が生まれました。名前は「CandleVerbalizer v1」。"},
+  {type:"text", chapter:1, text:"発想の起点は、番さんのこの気づきです。「移動平均線もボリンジャーバンドも、全部ローソク足の二次情報。だったら一次情報であるローソク足を直接読んだ方が優位なのでは？」"},
+  {type:"text", chapter:1, text:"これはトレードの本質を突いた問いです。インジケーターは全て、OHLCから計算された二次加工品。原材料を直接使う方が情報のロスが少ない、という考え方です。"},
+  {type:"text", chapter:1, text:"設計は3層構造になっています。"},
+  {type:"text", chapter:1, text:"L1は「言語化」。ローソク足のOHLCデータを、6つの指標で心理ラベルに変換します。方向、支配力、上ヒゲ拒否、下ヒゲ拒否、ボラティリティ変化、モメンタム。例えば「買い手支配、上ヒゲ拒否あり、ボラティリティ縮小」のように、数字の塊を人間が読める言葉に変換するわけです。"},
+  {type:"text", chapter:1, text:"L2は「エッジ検出」。言語化されたパターンの中から、統計的に優位性のある組み合わせを見つけます。ここが面白いのは、行動経済学と孫子の兵法を理論的な裏付けに使っている点です。プロスペクト理論、群衆心理、アンカリング効果。こうした人間の心理バイアスがローソク足の形に現れるはずだ、という仮説です。"},
+  {type:"text", chapter:1, text:"L3は「RR最適化」。見つかったパターンに対して、最適なSLとTPの組み合わせをバックテストで決定します。"},
+  {type:"text", chapter:1, text:"最終的に4つのパターンが生き残りました。ポートフォリオ全体の成績は、PF 1.686、シャープレシオ 1.012、最大DD 18パーセント、12年間で362トレード。ウォークフォワード検証も7ウィンドウ中7勝。PF保持率109.1パーセント。MT5バックテストでもPF 1.54を確認しています。"},
+  {type:"text", chapter:1, text:"ただし、番さんの判断は「まだデモには出さない」。SRROEのフォワードテストが7月に結果が出るまで待つ。これは「無料で検証から有料のステージゲート」という、いつものルールに従った判断です。"},
+
+  /* --- 第2章 --- */
+  {type:"chapter", chapter:2, text:"第2章：ICTトレーディングとSRROEの交差点"},
+  {type:"text", chapter:2, text:"同じ4月2日、ICTトレーディングについての勉強もしました。ICTとは、マイケル・ハドルストンが体系化した、機関投資家の行動原理に基づくトレード手法です。"},
+  {type:"text", chapter:2, text:"核心の考え方はシンプルです。「個人トレーダーがSLを置く場所を、機関投資家は燃料として狩りに来る」。"},
+  {type:"text", chapter:2, text:"ICTには5つの主要コンセプトがあります。流動性、オーダーブロック、FVG、キルゾーン、市場構造シフト。"},
+  {type:"text", chapter:2, text:"番さんが聞いたのは「この5つの痕跡は、SRROEのL1コサイン類似度に既に含まれているか？」という問いでした。"},
+  {type:"text", chapter:2, text:"答えは「部分的にイエス」。FVGやオーダーブロックのような「ローソク足の形状」に現れるものは、L1のパターンベクトルに間接的に含まれています。ただし、L1は「この形がFVGだ」と認識しているわけではなく、たまたま似た形として拾っているだけです。"},
+  {type:"text", chapter:2, text:"一方で、完全に欠落しているものが2つ。キルゾーン、つまり時間帯の情報。L1はOHLCの形だけを見ていて、何時に発生したかは知りません。もう一つは流動性の所在。直近の高安の外側にストップが溜まっているという概念は、L1の窓の外にある情報です。"},
+  {type:"text", chapter:2, text:"トレードで言い換えると、「L1は指紋は取れるが、犯人の動機は読めない」。"},
+  {type:"text", chapter:2, text:"もしICTの知見をSRROEに活かすなら、最も費用対効果が高いのはキルゾーン時間フィルターです。実装は簡単で、エントリー時刻で条件分岐するだけ。L1に完全に欠落している情報を補完できます。これは7月のフォワード結果を見た後の検討事項として覚えておいてください。"},
+
+  /* --- 第3章 --- */
+  {type:"chapter", chapter:3, text:"第3章：デジタル庁カラーパレットの取り込み"},
+  {type:"text", chapter:3, text:"4月2日、Xで見かけたデジタル庁の「ダッシュボードデザイン実践ガイドブック」を調査しました。これはPower BI用のデザインテンプレートですが、番さんが欲しかったのはJSONカラーパレットの部分です。"},
+  {type:"text", chapter:3, text:"GitHubリポジトリからクローンして確認したところ、PWAに直接使える形ではないものの、CSSカスタムプロパティとして抽出すれば、バスケPWAやO-TN-SUNダッシュボードの配色に使えることがわかりました。"},
+  {type:"text", chapter:3, text:"具体的なカラーコードはブルーテーマで8色。プライマリが0017C1、セカンダリが3460FB、といった具合です。これはUIデザインの統一基準として、今後のプロジェクト全体に適用できる資産です。"},
+
+  /* --- 第4章 --- */
+  {type:"chapter", chapter:4, text:"第4章：バスケPWAの危機発覚と修復"},
+  {type:"text", chapter:4, text:"4月3日、バスケ予約システムのポーリング調査を行った結果、深刻な問題が見つかりました。"},
+  {type:"text", chapter:4, text:"核心は3つ。1つ目。空き監視ドットパイが、cronに登録されていない上、dry runがtrueのまま、さらにパス参照がO-TN-SUNからBIGBANへの変更に追いついていない。2つ目。キャンセル監視ドットパイも同様にパスが壊れている。3つ目。唯一動いているharp APIドットパイは状況確認のみで、申し込み機能がない。"},
+  {type:"text", chapter:4, text:"つまり、「見ているだけで取りにいけない」状態が続いていたということです。4月の予約は全敗確定。これはFXで言えば、チャートは見えているのに注文ボタンが動かない状態と同じです。"},
+  {type:"text", chapter:4, text:"Coworkへの修復指示書を作成し、制約として「harp APIドットパイには一切触れない」を明示しました。修正範囲はパス参照とdry runフラグのみ。最小限の変更で復旧させます。"},
+  {type:"text", chapter:4, text:"そして重要な期日があります。4月20日、5月分の抽選申し込み開始。4月23日、当選確認と利用申請。これを忘れると当選が無効になります。この2つのcronが正しく動くかの確認は最優先です。"},
+
+  /* --- 第5章 --- */
+  {type:"chapter", chapter:5, text:"第5章：施設選択画面のローカル移植"},
+  {type:"text", chapter:5, text:"バスケPWAの修復と並行して、施設選択画面のローカル版への移植も動き出しました。"},
+  {type:"text", chapter:5, text:"方針は2段構え。まずCoworkに現在のローカル版ファイル構成を調査させる。調査結果を受けて、施設選択画面の実装指示書を作成する。"},
+  {type:"text", chapter:5, text:"調査の結果、ローカル版はhome.htmlが単一ファイルのフロントエンドで、Flaskサーバーがポート5100で配信していることが確認できました。施設選択は現在テキスト手入力方式で、これを277校リストからの選択方式に変えるのが次のタスクです。"},
+  {type:"text", chapter:5, text:"番さんの判断で、POSTパラメータの記録は実際の抽選申し込み期間、つまり4月20日以降に実操作で取得する方針になりました。先にUIを作って、APIの中身は後から埋める。これは正しい順序です。動くものを先に作って、データは実測で取る。"},
+
+  /* --- 第6章 --- */
+  {type:"chapter", chapter:6, text:"第6章：指示書と背景ファイルの同時出力ルール"},
+  {type:"text", chapter:6, text:"今回の作業を通じて、Coworkへの指示出しの方法がさらに洗練されました。"},
+  {type:"text", chapter:6, text:"2チャット方式の原則。チャット1、つまりこのclaude.aiで設計と相談をして、結論文書を作る。チャット2、つまりCoworkのフレッシュセッションに、指示書だけを渡す。"},
+  {type:"text", chapter:6, text:"そして新たに追加されたルール。「何かをファイル化する時は、仕様の要約と、それまでの全会話の背景をテキストファイルで別々に出力すること」。"},
+  {type:"text", chapter:6, text:"これは番さんの「全履歴を詳細に残す」というルールの実践です。指示書だけでは、なぜその設計になったのかが消えてしまう。背景ファイルがあることで、3ヶ月後に振り返った時も判断の理由がわかる。イチローの4000安打と8000凡打の記録と同じです。"},
+
+  /* --- 第7章 --- */
+  {type:"chapter", chapter:7, text:"第7章：今後の優先順位"},
+  {type:"text", chapter:7, text:"最後に、現時点での優先順位を整理します。"},
+  {type:"text", chapter:7, text:"最優先。バスケPWAのパス修復とキャンセル監視の復旧。4月20日の抽選cronが動くことの確認。"},
+  {type:"text", chapter:7, text:"次に。施設選択画面のローカル版移植。UIを先に作る。"},
+  {type:"text", chapter:7, text:"並行して。SRROEフォワードテストは放置。7月まで月1回のCSV更新のみ。"},
+  {type:"text", chapter:7, text:"保留。CandleVerbalizerのデモ投入はSRROE結果待ち。ICTキルゾーンフィルターも同様。"},
+
+  /* --- クロージング --- */
+  {type:"chapter", chapter:8, text:"クロージング"},
+  {type:"text", chapter:8, text:"今日の振り返りは以上です。"},
+  {type:"text", chapter:8, text:"この2日間で一番大事なのは、「新しい武器を作る楽しさに引っ張られず、足元のシステムを先に直す」という判断ができたことです。CandleVerbalizerの設計は刺激的でしたが、バスケPWAのパスが壊れていては娘たちの練習場所すら確保できない。"},
+  {type:"text", chapter:8, text:"足元を固めてから、次の挑戦へ。番さんの「遠回りは必要な試練」という哲学が、今日も生きています。"},
+  {type:"text", chapter:8, text:"それでは、安全運転で。Meiでした。"}
+];
+
+/* ============================================================
+   章タイトル一覧（ナビゲーション用）
+   ============================================================ */
+var chapters = [
+  {id:0, label:"OP"},
+  {id:1, label:"1章"},
+  {id:2, label:"2章"},
+  {id:3, label:"3章"},
+  {id:4, label:"4章"},
+  {id:5, label:"5章"},
+  {id:6, label:"6章"},
+  {id:7, label:"7章"},
+  {id:8, label:"ED"}
+];
+
+/* ============================================================
+   状態管理
+   ============================================================ */
+var currentIndex = 0;
+var speaking = false;
+var paused = false;
+var speechRate = 0.9;
+var initialized = false;
+var keepAliveTimer = null;
+var voicesReady = false;
+var paragraphElements = [];
+var textIndices = [];  /* contentの中でtype="text"のインデックス一覧 */
+
+/* ============================================================
+   ステータス表示
+   ============================================================ */
+function showStatus(msg, isError) {
+  var bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = 'status-bar visible' + (isError ? ' error' : '');
+}
+function hideStatus() {
+  document.getElementById('statusBar').className = 'status-bar';
+}
+
+/* ============================================================
+   【対策6】Web Speech API 対応チェック
+   ============================================================ */
+if (!('speechSynthesis' in window)) {
+  document.addEventListener('DOMContentLoaded', function() {
+    showStatus('このブラウザは音声再生に対応していません。Chrome または Safari をお使いください。', true);
+  });
+}
+
+/* ============================================================
+   【対策3】音声リスト読み込み待ち（getVoices空配列対策）
+   ============================================================ */
+function loadVoices() {
+  var voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) voicesReady = true;
+}
+if ('speechSynthesis' in window) {
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+/* ============================================================
+   【対策1】iOS Safari 初回タップ無音対策（warmUpパターン）
+   ============================================================ */
+function warmUp() {
+  if (initialized) return;
+  initialized = true;
+  var dummy = new SpeechSynthesisUtterance('');
+  dummy.volume = 0;
+  dummy.lang = 'ja-JP';
+  window.speechSynthesis.speak(dummy);
+  window.speechSynthesis.cancel();
+}
+document.addEventListener('touchstart', warmUp, { once: true });
+document.addEventListener('click', warmUp, { once: true });
+
+/* ============================================================
+   【対策2】Chrome 長文途切れ対策（15秒問題 keepAlive）
+   ============================================================ */
+function startKeepAlive() {
+  stopKeepAlive();
+  keepAliveTimer = setInterval(function() {
+    if (speaking && !paused && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }
+  }, 10000);
+}
+function stopKeepAlive() {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
+}
+
+/* ============================================================
+   コンテンツ構築
+   ============================================================ */
+function buildContent() {
+  var area = document.getElementById('contentArea');
+  var html = '';
+  var textCount = 0;
+  textIndices = [];
+
+  for (var i = 0; i < content.length; i++) {
+    var item = content[i];
+    if (item.type === 'chapter') {
+      html += '<div class="chapter-title" data-chapter="' + item.chapter + '">' + item.text + '</div>';
+    } else {
+      html += '<div class="paragraph" data-index="' + textCount + '" data-content-index="' + i + '">' + item.text + '</div>';
+      textIndices.push(i);
+      textCount++;
+    }
+  }
+  area.innerHTML = html;
+  paragraphElements = document.querySelectorAll('.paragraph');
+}
+
+function buildChapterNav() {
+  var nav = document.getElementById('chapterNav');
+  var html = '';
+  for (var i = 0; i < chapters.length; i++) {
+    html += '<button class="chapter-btn" data-chapter="' + chapters[i].id + '" onclick="jumpToChapter(' + chapters[i].id + ')">' + chapters[i].label + '</button>';
+  }
+  nav.innerHTML = html;
+}
+
+/* ============================================================
+   章ジャンプ
+   ============================================================ */
+function jumpToChapter(chapterId) {
+  /* 該当章の最初のtext段落を探す */
+  for (var i = 0; i < textIndices.length; i++) {
+    if (content[textIndices[i]].chapter === chapterId) {
+      if (speaking) {
+        window.speechSynthesis.cancel();
+        currentIndex = i;
+        speakParagraph(currentIndex);
+      } else {
+        currentIndex = i;
+        highlightParagraph(i);
+      }
+      updateChapterHighlight(chapterId);
+      return;
+    }
+  }
+}
+
+function updateChapterHighlight(chapterId) {
+  var btns = document.querySelectorAll('.chapter-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('active');
+    if (parseInt(btns[i].getAttribute('data-chapter')) === chapterId) {
+      btns[i].classList.add('active');
+    }
+  }
+}
+
+/* ============================================================
+   ハイライト・スクロール
+   ============================================================ */
+function clearHighlights() {
+  var all = document.querySelectorAll('.paragraph.highlight');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('highlight');
+  }
+}
+
+function highlightParagraph(idx) {
+  clearHighlights();
+  var el = paragraphElements[idx];
+  if (el) {
+    el.classList.add('highlight');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  /* プログレスバー更新 */
+  var pct = textIndices.length > 0 ? ((idx + 1) / textIndices.length * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  /* 章ナビ更新 */
+  if (textIndices[idx] !== undefined) {
+    updateChapterHighlight(content[textIndices[idx]].chapter);
+  }
+}
+
+/* ============================================================
+   段落再生
+   ============================================================ */
+function speakParagraph(idx) {
+  if (idx >= textIndices.length) {
+    speaking = false;
+    stopKeepAlive();
+    clearHighlights();
+    showStatus('再生完了');
+    document.getElementById('btnPlay').textContent = '▶ 再生';
+    document.getElementById('progressBar').style.width = '100%';
+    setTimeout(hideStatus, 3000);
+    return;
+  }
+  currentIndex = idx;
+  highlightParagraph(idx);
+  showStatus('再生中… (' + (idx + 1) + '/' + textIndices.length + ')');
+
+  var originalText = content[textIndices[idx]].text;
+  var spokenText = applyDictionary(originalText);
+
+  var utterance = new SpeechSynthesisUtterance(spokenText);
+  utterance.lang = 'ja-JP';
+  utterance.rate = speechRate;
+
+  /* 【対策3】日本語音声を優先的に選択 */
+  var voices = window.speechSynthesis.getVoices();
+  for (var v = 0; v < voices.length; v++) {
+    if (voices[v].lang === 'ja-JP' || voices[v].lang.indexOf('ja') === 0) {
+      utterance.voice = voices[v];
+      break;
+    }
+  }
+
+  utterance.onend = function() {
+    if (speaking && !paused) {
+      speakParagraph(idx + 1);
+    }
+  };
+
+  /* 【対策4】エラーをUIに通知 */
+  utterance.onerror = function(e) {
+    if (e.error === 'interrupted' || e.error === 'canceled') return;
+    showStatus('音声エラー: ' + (e.error || '不明') + ' — 次の段落へ', true);
+    if (speaking && !paused) {
+      setTimeout(function() { speakParagraph(idx + 1); }, 500);
+    }
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+/* ============================================================
+   再生コントロール
+   ============================================================ */
+function startSpeech() {
+  if (!('speechSynthesis' in window)) {
+    showStatus('このブラウザは音声再生に対応していません', true);
+    return;
+  }
+  warmUp();
+  if (paused) {
+    paused = false;
+    window.speechSynthesis.resume();
+    startKeepAlive();
+    showStatus('再生再開');
+    document.getElementById('btnPlay').textContent = '▶ 再生中';
+    return;
+  }
+  window.speechSynthesis.cancel();
+  speaking = true;
+  paused = false;
+  startKeepAlive();
+  document.getElementById('btnPlay').textContent = '▶ 再生中';
+  speakParagraph(currentIndex);
+}
+
+function pauseSpeech() {
+  if (speaking) {
+    paused = true;
+    stopKeepAlive();
+    window.speechSynthesis.pause();
+    showStatus('一時停止中 (' + (currentIndex + 1) + '/' + textIndices.length + ')');
+    document.getElementById('btnPlay').textContent = '▶ 再開';
+  }
+}
+
+function stopSpeech() {
+  speaking = false;
+  paused = false;
+  currentIndex = 0;
+  stopKeepAlive();
+  window.speechSynthesis.cancel();
+  clearHighlights();
+  hideStatus();
+  document.getElementById('btnPlay').textContent = '▶ 再生';
+  document.getElementById('progressBar').style.width = '0%';
+  updateChapterHighlight(-1);
+}
+
+function skipNext() {
+  if (currentIndex < textIndices.length - 1) {
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      currentIndex++;
+      speakParagraph(currentIndex);
+    } else {
+      currentIndex++;
+      highlightParagraph(currentIndex);
+    }
+  }
+}
+
+function skipPrev() {
+  if (currentIndex > 0) {
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      currentIndex--;
+      speakParagraph(currentIndex);
+    } else {
+      currentIndex--;
+      highlightParagraph(currentIndex);
+    }
+  }
+}
+
+function changeSpeed() {
+  speechRate = parseFloat(document.getElementById('speedSelect').value);
+  if (speaking && !paused) {
+    window.speechSynthesis.cancel();
+    speakParagraph(currentIndex);
+  }
+}
+
+/* ============================================================
+   段落タップで再生位置変更
+   ============================================================ */
+document.addEventListener('click', function(e) {
+  var el = e.target.closest('.paragraph');
+  if (!el) return;
+  var idx = parseInt(el.getAttribute('data-index'));
+  if (isNaN(idx)) return;
+  if (speaking) {
+    window.speechSynthesis.cancel();
+    currentIndex = idx;
+    speakParagraph(currentIndex);
+  } else {
+    currentIndex = idx;
+    highlightParagraph(idx);
+  }
+});
+
+/* ============================================================
+   画面が非表示→表示に戻った時の復帰処理（スマホのタブ切替対策）
+   ============================================================ */
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    /* バックグラウンドではkeepAlive不要 */
+    stopKeepAlive();
+  } else {
+    /* フォアグラウンド復帰 */
+    if (speaking && !paused) {
+      startKeepAlive();
+      /* Chromeで復帰後に止まっていたら再開 */
+      if (!window.speechSynthesis.speaking) {
+        speakParagraph(currentIndex);
+      }
+    }
+  }
+});
+
+/* ============================================================
+   初期化
+   ============================================================ */
+buildContent();
+buildChapterNav();
+</script>
+</body>
+</html>
